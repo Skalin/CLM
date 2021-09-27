@@ -31,9 +31,11 @@ class Fetcher:
     def validate_endpoint(self, endpoint):
         datatype, action = endpoint.split('_')
 
-        try
+        try:
             self.get_allowed_datatypes().index(datatype)
             self.get_allowed_actions().index(action)
+            json_data = self.get_request(endpoint)
+
         except ValueError:
             return False
         return True
