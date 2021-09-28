@@ -1,13 +1,14 @@
 import json
 
-# This should build my own custom object with my data so I do not have to walk through whole config every time I access it.
-class Mapper:
+
+class Config:
+    access_token = None
     encoding = 'utf-8'
-    mapper = ''
+    base_url = None
 
-    def __init__(self, encoding):
-        self.encoding = encoding
-
+    def __init__(self, base_url, access_token):
+        self.base_url = base_url
+        self.access_token = access_token
 
     def set_mapper(self, mapping_json):
         self.mapper = json.loads(mapping_json)
