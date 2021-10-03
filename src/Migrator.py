@@ -4,21 +4,16 @@ import Fetcher
 
 class Migrator:
     config = None
+    endpoint = None
 
-    def __init__(self, config):
+    def __init__(self, config, endpoint):
         self.config = config
+        self.endpoint = endpoint
 
-    def fetch_data(self):
+    def fetch_data(self, endpoint):
         f = Fetcher.Fetcher(self.config)
-        datatypes_lists = {}
-        for i in f.get_allowed_datatypes():
-            endpoint = '_'.join((i, f.list_action))
-            response = f.fetch(endpoint)
-            datatypes_lists[i] = response
+        response = f.fetch('_'.join((endpoint, f.list_action)))
+        return response
 
-        print(datatypes_lists)
-        for i in datatypes_lists:
-            print(i)
-            print(datatypes_lists[i])
-
-
+    def migrate(self):
+        pass

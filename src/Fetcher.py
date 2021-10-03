@@ -6,7 +6,10 @@ class Fetcher:
     config = None
     list_action = 'list'
     actions = ['list', 'show']
-    datatypes = ['package', 'tag', 'user']
+    datatypes = {
+                    'package': {'class': 'PackageMapper'},
+                    #'tag', 'user', 'member', 'organization', 'license'
+    }
 
     def __init__(self, config, actions=None, datatypes=None):
         self.config = config
@@ -19,7 +22,7 @@ class Fetcher:
         return None
 
     def get_allowed_datatypes(self):
-        return self.datatypes
+        return self.datatypes.keys()
 
     def get_allowed_actions(self):
         return self.actions
@@ -42,8 +45,8 @@ class Fetcher:
     def validate_endpoint(self, endpoint):
         datatype, action = endpoint.split('_')
 
-        if self.get_allowed_datatypes().index(datatype) is ValueError:
+        if self.get_allowed_datatypes().count(datatype) == 0:
             return False
-        if self.get_allowed_actions().index(action) is ValueError:
+        if self.get_allowed_actions().count(action) == 0:
             return False
         return True
