@@ -3,6 +3,7 @@ import json
 
 
 class Fetcher:
+    mapper_class = 'Mapper'
     config = None
     list_action = 'list'
     actions = ['list', 'show']
@@ -33,8 +34,12 @@ class Fetcher:
         headers = {
             'Authorization': self.config.access_token
         }
-        r = requests.get('/'.join((self.config.base_url, 'api/action', endpoint)))
+        print(headers)
+        route = '/'.join((self.config.base_url, 'api/action', endpoint))
+        print(route)
+        r = requests.get(route, headers=headers)
         data = r.json()
+        print(data)
         if data.get('success') is not True:
             return []
         return data.get('result')
@@ -45,7 +50,7 @@ class Fetcher:
     def validate_endpoint(self, endpoint):
         datatype, action = endpoint.split('_')
 
-        if self.get_allowed_datatypes().count(datatype) == 0:
+        if datatype in self.get_allowed_datatypes():
             return False
         if self.get_allowed_actions().count(action) == 0:
             return False

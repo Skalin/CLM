@@ -1,1 +1,4 @@
 .idea
+
+# migration files
+/migration_*
