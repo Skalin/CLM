@@ -37,7 +37,7 @@ class Migrator:
             mapper = getattr(mappers, self.fetcher.datatypes[datatype]['class'])(self.config)
             mapper.set_migration_dir(migration_dir)
             mapper.set_endpoint(datatype)
-            mapper.process_data(self.get_fetcher().list_action)
+            mapper.process_data(migration_dir, self.get_fetcher().list_action)
 
 
 
