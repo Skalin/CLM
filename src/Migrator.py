@@ -34,10 +34,10 @@ class Migrator:
             f = self.init_file(migration_dir+"/"+datatype+"_"+self.fetcher.list_action)
             f.write(json.dumps(self.get_fetcher().get_request('_'.join((datatype, self.get_fetcher().list_action)))))
             f.close()
-            mapper = getattr(mappers, self.fetcher.datatypes[datatype]['class'])(self.config)
+            mapper = getattr(mappers, self.fetcher.datatypes[datatype]['class'])(self.config, datatype)
             mapper.set_migration_dir(migration_dir)
             mapper.set_endpoint(datatype)
-            mapper.process_data(migration_dir, self.get_fetcher().list_action)
+            mapper.process_data(self.get_fetcher().list_action)
 
 
 
