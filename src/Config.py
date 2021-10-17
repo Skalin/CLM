@@ -4,10 +4,12 @@ class Config:
     access_token = None
     encoding = 'utf-8'
     base_url = None
+    vatin = None
 
-    def __init__(self, base_url, access_token):
+    def __init__(self, base_url, access_token, vatin):
         self.base_url = base_url
         self.access_token = access_token
+        self.vatin = vatin
 
     def set_mapper(self, mapping_json):
         self.mapper = json.loads(mapping_json)

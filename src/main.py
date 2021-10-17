@@ -8,7 +8,7 @@ import Migrator
 
 
 def main():
-    c = Config.Config('http://sc02.fi.muni.cz', 'a1875f9c-8c91-41a3-a720-dc5caee3b4d1')
+    c = Config.Config('http://sc02.fi.muni.cz', 'a1875f9c-8c91-41a3-a720-dc5caee3b4d1', '00281344')
     m = Migrator.Migrator(c)
     m.migrate()
 

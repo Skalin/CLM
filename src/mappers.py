@@ -5,6 +5,7 @@ import Fetcher
 import sys
 import time
 import jsonschema
+from dateutil import parser
 
 
 class Mapper:
@@ -83,28 +84,51 @@ class PackageMapper(Mapper):
     def parse_data(self):
         for item in self.get_data()['old']:
             print("Parsing \""+item+"\" in datatype \""+self.datatype+"\".")
-            json_old = None
+            old_json = None
             with open('/'.join((self.get_migration_dir(), self.get_endpoint(), item+".json")), 'r') as reader:
-                json_old = json.loads(reader.read())
+                old_json = json.loads(reader.read())
 
-            if json_old is None:
+            if old_json is None:
                 return False
 
-            for attr in json_old:
-                print(attr+": "+repr(json_old[attr]))
-            sys.exit(1)
-
-            # validate new json according to NKOD structure
-            #self.validate_json(new_structure)
-            # save to new file with name old_json_new
+            new_json = self.process_json(old_json)
+            self.validate_json(new_json)
             f = self.init_file('/'.join((self.get_migration_dir(), self.get_endpoint(), item+"_new.json")))
+            f.write(json.dumps(new_json))
             f.close()
 
             print("Saved item successfully \""+item+"\" successfully.")
-        print("All files were successfully parsed into new files. Started validating …")
-        ...
+        print("All files were successfully parsed into new files. You can download them in: "+'/'.join((os.getcwd(), self.migration_dir)))
 
-    def validate_json(self, json):
+
+    def process_json(self, old_json):
+        new_json = {'@context': 'https://ofn.gov.cz/rozhraní-katalogů-otevřených-dat/2021-01-11/kontexty/rozhraní-katalogů-otevřených-dat.jsonld', 'iri': "https://data.gov.cz/lkod/mdcr/datové-sady/vld", 'typ': 'Datová sada'}
+        new_json['název'] = {'cs': old_json['title']}
+        resource = old_json['resources'][0]
+        new_json['popis'] = {'cs': resource['name']}
+        new_json['dokumentace'] = 'https://operator-ict.gitlab.io/golemio/documentation'
+        new_json['prvek_rúian'] = 'https://linked.cuzk.cz/resource/ruian/stat/1'
+        new_json['poskytovatel'] = '/'.join(('https://linked.opendata.cz/zdroj/ekonomický-subjekt/', self.config.vatin))
+        new_json['periodicita_aktualizace'] = 'http://publications.europa.eu/resource/authority/frequency/MONTHLY'
+        new_json['časové_pokrytí'] = {
+            'typ': 'Časový interval',
+            'začátek': datetime.strptime(resource['created']),
+            'konec': datetime.strptime(resource['last_modified'])
+        }
+        new_json['distribuce'] = [{
+            'typ_média': 'http://www.iana.org/assignments/media-types/'+resource['mimetype'],
+            'typ': 'Distribuce',
+            'název': {
+                'cs': resource['name']
+            },
+            'soubor_ke_stažení': resource['url'],
+            'přístupové_url': resource['url'],
+            'formát': 'http://publications.europa.eu/resource/authority/file-type/'+resource['format']
+        }]
+        self.validate_json(new_json)
+        return new_json
+
+    def validate_json(self, json_to_validate):
         ...
 
     def init_file(self, path):
