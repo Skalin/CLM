@@ -1,4 +1,3 @@
-import sys
 import Fetcher
 import os
 import datetime

@@ -4,8 +4,6 @@ import ast
 import Fetcher
 import sys
 import time
-import jsonschema
-from dateutil import parser
 
 
 class Mapper:

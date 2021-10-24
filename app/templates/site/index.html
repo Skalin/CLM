@@ -1,0 +1,23 @@
+{% extends 'layouts/main.html' %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block title %}Migrační aplikace CKAN - LKOD{% endblock %}
+
+{% block content %}
+
+{% block header %}
+<div class="jumbotron text-center">
+    <h1>Migrační aplikace CKAN - LKOD</h1>
+</div>
+{% endblock %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-sm-12 col-md-6 col-lg-5 col-center">
+            <div class="well">
+                {{ wtf.quick_form(form) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

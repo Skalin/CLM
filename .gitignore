@@ -2,3 +2,5 @@
 
 # migration files
 /migration_*
+
+app/.env
