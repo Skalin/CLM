@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request, flash
 from app.src.models.LoginForm import LoginForm
 
 template_path = 'site/'
@@ -10,7 +10,9 @@ site = Blueprint('site', __name__)
 def index():
     form = LoginForm()
     if request.method == 'POST' and form.validate_on_submit():
-        return redirect(url_for("site.index"))
+        if form.migrate() is False:
+            flash("Form migration was not successful!")
+            return redirect(url_for('site.index'))
 
     return render_template(template_path+'index.html', form=form)
 
