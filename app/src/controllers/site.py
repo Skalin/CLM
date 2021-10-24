@@ -15,5 +15,6 @@ def index():
     return render_template(template_path+'index.html', form=form)
 
 
+@site.route('/installation')
 def installation():
     return render_template(template_path+'installation.html')
