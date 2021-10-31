@@ -1,4 +1,5 @@
 import sys
+import json
 import requests
 from datetime import datetime
 from app.src.components.clm.Config import Config
@@ -32,13 +33,18 @@ class Migrator:
     def migrate(self):
         self.dataset_endpoints = self.get_fetcher().get_request('_'.join(('package', self.get_fetcher().list_action)))
         for dataset in self.dataset_endpoints:
-            data = self.fetcher.fetch('package_show', {'id': dataset})
-            self.migrate_dataset(dataset, data)
-        return self.datasets
+            self.migrate_dataset(dataset=dataset)
+        return len(self.datasets[CONSTANT_JSON_INVALID]) == 0
 
-    def migrate_dataset(self, dataset, data):
-        new_data = self.prepare_dataset_json(data)
-        valid_state = self.json_validator.validate_json(new_data)
+    def get_new_dataset(self, dataset):
+        old = self.fetch_old_dataset(dataset)
+        return self.prepare_dataset_json(old)
+
+    def fetch_old_dataset(self, dataset):
+        return self.get_fetcher().fetch('package_show', {'id': dataset})
+
+    def migrate_dataset(self, dataset):
+        valid_state = self.json_validator.validate_json(self.get_new_dataset(dataset), dataset)
         if (self.migration_type == 'all' or self.migration_type == CONSTANT_JSON_VALID) and valid_state is True:
             self.datasets[CONSTANT_JSON_VALID].append(dataset)
         elif (self.migration_type == 'all' or self.migration_type == CONSTANT_JSON_INVALID) and valid_state is False:
@@ -71,4 +77,13 @@ class Migrator:
             'přístupové_url': resource['url'],
             'formát': 'http://publications.europa.eu/resource/authority/file-type/' + resource['format']
         }]
-        return new_data
+        if 'extras' in data:
+            extras = data['extras']
+            theme = [element for element in extras if element['key'] == 'theme']
+            if len(theme) > 0:
+                new_data['téma'] = theme[0]['value']
+        if 'tags' in data:
+            tags = data['tags']
+            new_data['klíčové_slovo'] = tags
+
+        return json.dumps(new_data)

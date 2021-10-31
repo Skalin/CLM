@@ -19,5 +19,34 @@
             </div>
         </div>
     </div>
+
+    {% if form.get_migration_datasets() %}
+    <div class="row">
+        <div class="col-sm-12 col-md-8 col-center">
+            <div class="well">
+                <h2>Stav migrace</h2>
+
+                {% for status in form.get_migration_datasets() %}
+                <h3>Stav: {{ form.get_status_translation(status) }}</h3>
+                <table class="table">
+                    <tbody>
+                    {% for dataset in form.get_migration_datasets()[status] %}
+                    <tr>
+                        <th>
+                            {{ dataset }}
+                        </th>
+                        <td>
+                            <a href="{{url_for('site.download', dataset=dataset) }}" type="button" class="btn btn-default">Stáhnout</a>
+                            <a href="{{url_for('site.migrate', dataset=dataset) }}" type="button" class="btn btn-default">Zmigrovat ručně</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

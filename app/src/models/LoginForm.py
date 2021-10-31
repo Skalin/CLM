@@ -1,10 +1,10 @@
-from flask import flash, redirect, url_for
+from flask import flash, redirect, url_for, session
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField
 from wtforms.validators import DataRequired, URL
 import requests
 from app.src.models.LKODUser import LKODUser
-from app.src.models.Migrator import Migrator
+from app.src.models.Migrator import Migrator, CONSTANT_JSON_VALID, CONSTANT_JSON_INVALID
 
 
 class LoginForm(FlaskForm):
@@ -23,7 +23,18 @@ class LoginForm(FlaskForm):
         self.check_servers()
         self.login()
         self.migrator = Migrator(self.lkod_server_url.data, self.ckan_server_url.data, self.ckan_api_key.data, self.company_vatin.data, self.variant.data)
-        print(self.migrator.migrate())
+        migration_status = self.migrator.migrate()
+        session['migrator'] = {'lkod': {'url': self.lkod_server_url.data}, 'ckan': {'url': self.ckan_server_url.data, 'api_key': self.ckan_api_key.data}, 'vatin': self.company_vatin.data, 'variant': self.variant.data}
+        return migration_status
+
+    def get_migration_datasets(self):
+        return self.migrator.datasets if self.migrator is not None else []
+
+    def get_status_translation(self, status):
+        if status == CONSTANT_JSON_VALID:
+            return 'Zpracováno'
+        elif status == CONSTANT_JSON_INVALID:
+            return 'Ke zpracování'
 
     def login(self):
         if self.login_CKAN() is False:
