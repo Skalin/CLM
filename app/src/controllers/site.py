@@ -63,13 +63,32 @@ def migrate(dataset):
     form_data = json.dumps(migrator_cls.get_new_dataset(dataset), separators=(',', ':'))
     response = requests.post(lkod['url'] + '/datasets', data={'organizationId': 1},
                              headers={'Authorization': 'Bearer ' + lkod['accessToken']}).json()
+    print(response)
     if 'id' in response:
         session_response = requests.post(lkod['url'] + '/sessions', data={'datasetId': response['id']},
                                          headers={'Authorization': 'Bearer ' + lkod['accessToken']}).json()
         print(session_response)
-        url = 'https://data.gov.cz/formul%C3%A1%C5%99/registrace-datov%C3%A9-sady'
-        params = urllib.parse.urlencode({'returnUrl': migrator['lkod']['url'] + '/form-data'})
-        return redirect(url + '?' + params, code=301)
+        session_id = session_response['id']
+        user_data = {'accessToken': lkod['accessToken'], 'sessionId': session_id, 'datasetId': response['id']}
+
+        form_response = requests.post(lkod['url']+'/form-data', headers={'ContentType': 'application/x-www-form-urlencoded'}, json={'userData': json.dumps(user_data), 'formData':json.dumps({
+            "@context": "https://ofn.gov.cz/rozhraní-katalogů-otevřených-dat/2021-01-11/kontexty/rozhraní-katalogů-otevřených-dat.jsonld",
+            "typ": "Datová+sada", "název": {"cs": "test+datová+sada přes API"}, "popis": {"cs": "popisek"}, "prvek_rúian": [],
+            "geografické_území": [], "prostorové_pokrytí": [],
+            "klíčové_slovo": {"cs": ["slovo+A", "slovo+B"], "en": []},
+            "periodicita_aktualizace": "http://publications.europa.eu/resource/authority/frequency/MONTHLY",
+            "téma": ["http://publications.europa.eu/resource/authority/data-theme/OP_DATPRO"], "koncept_euroVoc": [],
+            "kontaktní_bod": {}, "distribuce": [{"typ": "Distribuce",
+                                                 "podmínky_užití": {"typ": "Specifikace+podmínek+užití",
+                                                                    "autorské_dílo": "https://data.gov.cz/podmínky-užití/neobsahuje-autorská-díla/",
+                                                                    "databáze_jako_autorské_dílo": "https://data.gov.cz/podmínky-užití/není-autorskoprávně-chráněnou-databází/",
+                                                                    "databáze_chráněná_zvláštními_právy": "https://data.gov.cz/podmínky-užití/není-chráněna-zvláštním-právem-pořizovatele-databáze/",
+                                                                    "osobní_údaje": "https://data.gov.cz/podmínky-užití/neobsahuje-osobní-údaje/"},
+                                                 "soubor_ke_stažení": "https://www.seznam.cz",
+                                                 "přístupové_url": "https://www.seznam.cz",
+                                                 "typ_média": "http://www.iana.org/assignments/media-types/text/csv",
+                                                 "formát": "http://publications.europa.eu/resource/authority/file-type/CSV"}]})})
+        print(form_response.url)
     return redirect(url_for('site.index'))
 
 

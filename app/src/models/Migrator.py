@@ -50,6 +50,9 @@ class Migrator:
         elif (self.migration_type == 'all' or self.migration_type == CONSTANT_JSON_INVALID) and valid_state is False:
             self.datasets[CONSTANT_JSON_INVALID].append(dataset)
 
+    def create_dataset(self, organizationId):
+        requests.post()
+
     def prepare_dataset_json(self, data):
         new_data = {
             '@context': 'https://ofn.gov.cz/rozhraní-katalogů-otevřených-dat/2021-01-11/kontexty/rozhraní-katalogů-otevřených-dat.jsonld',
