@@ -2,11 +2,17 @@
 
 FROM python:3.7-slim-buster
 
-WORKDIR /app
+MAINTAINER Dominik Skála "dominikskala@seznam.cz"
 
 COPY requirements.txt requirements.txt
+
+WORKDIR /
+
 RUN pip3 install -r requirements.txt
 
-COPY . .
+COPY app/ /app
+COPY main.py /main.py
 
-CMD [ "python3", "-m" , "src/main.py"]
+
+
+CMD ["python3", "/main.py"]

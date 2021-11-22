@@ -1,5 +1,8 @@
+requests
+jsonref
 jsonschema
 flask
 flask_bootstrap
 flask_wtf
 wtforms
+python-dotenv

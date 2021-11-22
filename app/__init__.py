@@ -11,5 +11,3 @@ def create_app():
     from app.src.controllers.site import site
     app.register_blueprint(site, url_prefix='/')
     return app
-
-
