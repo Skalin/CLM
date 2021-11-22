@@ -1,30 +1,26 @@
-import jsonschema.exceptions
 import requests
-import json
-from jsonschema import validate
+import jsonschema
+from jsonschema import Draft7Validator
 
 
 class JSONValidator:
+    schema = None
+    resolver = None
+    api_url = ""
+    errors = {}
 
-    schema_url = ''
-    _json_schema = None
+    def __init__(self, api_url):
+        self.api_url = api_url
+        self.schema = requests.get('https://ofn.gov.cz/rozhran%C3%AD-katalog%C5%AF-otev%C5%99en%C3%BDch-dat/2021-01-11/sch%C3%A9mata/datov%C3%A1-sada.json').json()
 
-    def __init__(self, schema_url):
-        self.schema_url = schema_url
-
-    def get_json_schema(self):
-        if self._json_schema is None:
-            self._json_schema = self.fetch_json_schema()
-        return self._json_schema
-
-    def fetch_json_schema(self):
-        return requests.get(self.schema_url)
-
-    def validate(self, json):
+    def validate_json(self, data, dataset):
         try:
-            validate(json, self.get_json_schema())
-        except jsonschema.exceptions.ValidationError as err:
-            print(err.message)
+            validator = Draft7Validator(self.schema)
+            validator.validate(data)
+            return True
+        except RecursionError as e:
+            self.errors[dataset] = e
             return False
-        return True
-
+        except jsonschema.exceptions.ValidationError as e:
+            self.errors[dataset] = e
+            return False

@@ -1,7 +1,5 @@
-import sys
 import json
 import requests
-from datetime import datetime
 from app.src.components.clm.Config import Config
 from app.src.components.clm.Fetcher import Fetcher
 from app.src.models.JSONValidator import JSONValidator

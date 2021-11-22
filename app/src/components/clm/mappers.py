@@ -4,6 +4,7 @@ import ast
 import Fetcher
 import sys
 import time
+from JSONValidator import JSONValidator
 
 
 class Mapper:
@@ -14,7 +15,6 @@ class Mapper:
     def __init__(self, config, datatype):
         self.config = config
         self.datatype = datatype
-
 
     def set_endpoint(self, endpoint):
         self.base_endpoint = endpoint
@@ -55,7 +55,6 @@ class PackageMapper(Mapper):
     def get_endpoint(self):
         return '_'.join((self.datatype, self.action))
 
-
     def process_data(self, action):
         file_name = "_".join((self.get_base_endpoint(), action))
         if os.path.exists(self.migration_dir+"/"+file_name) is False:
@@ -79,7 +78,7 @@ class PackageMapper(Mapper):
         print("All files were successfully downloaded. Started parsing …")
         self.parse_data()
 
-    def parse_data(self):
+    def parse_data(self, dataset=''):
         for item in self.get_data()['old']:
             print("Parsing \""+item+"\" in datatype \""+self.datatype+"\".")
             old_json = None
@@ -90,7 +89,8 @@ class PackageMapper(Mapper):
                 return False
 
             new_json = self.process_json(old_json)
-            self.validate_json(new_json)
+            #TODO pass dataset
+            self.validate_json(new_json, '')
             f = self.init_file('/'.join((self.get_migration_dir(), self.get_endpoint(), item+"_new.json")))
             f.write(json.dumps(new_json))
             f.close()
@@ -126,8 +126,9 @@ class PackageMapper(Mapper):
         self.validate_json(new_json)
         return new_json
 
-    def validate_json(self, json_to_validate):
-        ...
+    def validate_json(self, data, dataset):
+        validator = JSONValidator
+        validator.validate_json(data, dataset)
 
     def init_file(self, path):
         if os.path.exists(path):
