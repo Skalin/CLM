@@ -30,9 +30,11 @@ class Fetcher:
     def get_request(self, endpoint, params = {}):
         if self.validate_endpoint(endpoint) is False:
             return {}
-        headers = {
-            'Authorization': self.config.access_token
-        }
+        headers = {}
+        if self.config.access_token is not None:
+            headers = {
+                'Authorization': self.config.access_token
+            }
         route = '/'.join((self.config.base_url, 'api/action', endpoint))
         r = requests.get(route, headers=headers, params=params)
         data = r.json()

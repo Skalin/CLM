@@ -13,8 +13,11 @@ class LKODUser:
     def login(self, username, password):
         data = requests.post(self.url+'/login', data={'email': username, 'password': password})
         content = json.loads(data.content)
-        if 'accessToken' in content:
-            self.access_token = content['accessToken']
-            session['lkod'] = {'url': self.url, 'accessToken': self.access_token}
-            return True
-        return False
+        if 'accessToken' not in content:
+            session['lkod'] = None
+            print("return false")
+            return False
+
+        self.access_token = content['accessToken']
+        session['lkod'] = {'url': self.url, 'accessToken': self.access_token}
+        return True
