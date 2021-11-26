@@ -2,6 +2,11 @@ body {
     color: rgba(0, 0, 0, 0.87)
 }
 
+.navbar {
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
 .well {
     background-color: white;
 }

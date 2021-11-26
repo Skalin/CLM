@@ -30,6 +30,18 @@ def login():
     ...
 
 
+@site.route('/logout', methods=['GET', 'POST'])
+def logout():
+    if 'lkod' in session:
+        session['lkod'] = None
+    if 'migrator' in session:
+        session['migrator'] = None
+    if 'datasets' in session:
+        session['datasets'] = None
+
+    return redirect(url_for('site.index'))
+
+
 @site.route('/download/<dataset>')
 def download(dataset):
     if 'migrator' not in session:
