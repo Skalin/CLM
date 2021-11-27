@@ -30,13 +30,11 @@ def index():
 
     return render_template(template_path + 'index.html', form=form)
 
-
-@site.route('/login', methods=['GET', 'POST'])
-def login():
+@site.route('/authors', methods=['GET'])
+def authors():
     ...
 
-
-@site.route('/logout', methods=['GET', 'POST'])
+@site.route('/logout', methods=['GET'])
 def logout():
     if 'lkod' in session:
         session['lkod'] = None
@@ -46,22 +44,6 @@ def logout():
         session['datasets'] = None
 
     return redirect(url_for('site.index'))
-
-
-@site.route('/download/<dataset>')
-def download(dataset):
-    if 'migrator' not in session:
-        flash('Please reinsert data into form, to be able to submit data')
-        redirect(url_for('site.login'))
-
-    migrator = session['migrator']
-    migrator_cls = Migrator(migrator['lkod']['url'], migrator['ckan']['url'], migrator['ckan']['api_key'],
-                            migrator['vatin'])
-    form_data = json.dumps(migrator_cls.get_new_dataset(dataset), separators=(',', ':'))
-    return Response(
-        form_data,
-        mimetype="application/json",
-        headers={"Content-disposition": "attachment; filename=" + dataset + ".json"})
 
 
 @site.route('/migrate/<dataset>', methods=['GET'])
