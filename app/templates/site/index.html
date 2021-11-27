@@ -8,33 +8,35 @@
 {% block header %}
 
 <nav class="navbar navbar-default">
-  <div class="container-fluid">
-    <!-- Brand and toggle get grouped for better mobile display -->
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="#">CLM</a>
-    </div>
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">CLM</a>
+        </div>
 
-    <!-- Collect the nav links, forms, and other content for toggling -->
-    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-      <ul class="nav navbar-nav">
-        <li class="active"><a href="{{url_for('site.index') }}">Homepage <span class="sr-only">(current)</span></a></li>
-        <li><a href="{{url_for('site.installation') }}">Instalace</a></li>
-      </ul>
-      <ul class="nav navbar-nav navbar-right">
-        {% if session['lkod'] %}
-        <li class="">
-          <a href="{{url_for('site.logout') }}" class="">Odhlásit se </a>
-        </li>
-        {% endif %}
-      </ul>
-    </div><!-- /.navbar-collapse -->
-  </div><!-- /.container-fluid -->
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="{{url_for('site.index') }}">Homepage <span class="sr-only">(current)</span></a>
+                </li>
+                <li><a href="{{url_for('site.installation') }}">Instalace</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                {% if session['lkod'] %}
+                <li class="">
+                    <a href="{{url_for('site.logout') }}" class="">Odhlásit se </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
 </nav>
 
 <div class="jumbotron text-center jumbotron-lkod">
@@ -43,38 +45,187 @@
 {% endblock %}
 
 <div class="container">
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul class=flashes>
+        {% for message in messages %}
+        <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+    {% if not migration_form %}
     <div class="row">
-        <div class="col-sm-12 col-md-6 col-lg-5 col-center">
+        <div class="col-sm-12 col-md-6 col-lg-6 col-center">
             <div class="well">
-                {{ wtf.quick_form(form) }}
+
+                <form method=post>
+                    {{ form.csrf_token }}
+                    <div class="panel" id="panel-ckan">
+                        <div class="panel-heading"><h3 class="panel-title">Konfigurace CKAN</h3></div>
+                        <div class="panel-body">
+                            <div class="form-group ">
+
+                                {{ form.ckan_server_url.label(class='control-label', text='URL serveru') }}
+                                {{ form.ckan_server_url(class='form-control') }}
+
+                                {% for error in form.ckan_server_url.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </div>
+
+                            <div class="form-group ">
+
+                                {{ form.ckan_api_key.label(class='control-label', text='API klíč') }}
+                                {{ form.ckan_api_key(class='form-control') }}
+                                {% for error in form.ckan_api_key.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel" id="panel-lkod">
+                        <div class="panel-heading"><h3 class="panel-title">Konfigurace LKOD</h3></div>
+                        <div class="panel-body">
+                            <div class="form-group ">
+                                {{ form.lkod_server_url.label(class='control-label', text='URL serveru') }}
+                                {{ form.lkod_server_url(class='form-control') }}
+                                {% for error in form.lkod_server_url.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </div>
+
+                            <div class="form-group ">
+                                {{ form.lkod_company_id.label(class='control-label', text='ID instituce v LKOD') }}
+                                <a class="" role="button" data-toggle="collapse" href="#lkod-company-id-info"
+                                   aria-expanded="false" aria-controls="collapseExample"><span
+                                        class="glyphicon glyphicon-search"></span>
+                                </a>
+                                <div class="collapse" id="lkod-company-id-info">
+                                    <div class="well">
+                                        ID instituce v LKOD je číselná hodnota, kterou Vám musí sdělit integrátor řešení
+                                        Lokálního katalogu. Organizace musí být v rámci lokálníh katalogu předem
+                                        založena.
+                                    </div>
+                                </div>
+
+                                {{ form.lkod_company_id(class='form-control') }}
+                                {% for error in form.lkod_company_id.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </div>
+
+                            <div class="form-group ">
+                                {{ form.username.label(class='control-label', text='Uživatelské jméno') }}
+                                {{ form.username(class='form-control') }}
+                                {% for error in form.username.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group ">
+                                {{ form.password.label(class='control-label', text='Heslo') }}
+                                {{ form.password(class='form-control') }}
+                                {% for error in form.password.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-heading"><h3 class="panel-title">Dodatečné parametry pro migraci</h3></div>
+                        <div class="panel-body">
+                            <div class="form-group ">
+                                {{ form.company_vatin.label(class='control-label', text='IČO instituce') }}
+                                {{ form.company_vatin(class='form-control') }}
+                                {% for error in form.company_vatin.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group ">
+                        <div class="col-sm-12 col-md-6 col-lg-6 col-right">
+                            {{ form.login_form_submit(class='btn btn-primary') }}
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+    {% endif %}
 
-    {% if session['datasets'] %}
+    {% if form.is_ready() %}
     <div class="row">
         <div class="col-sm-12 col-md-8 col-center">
             <div class="well">
                 <h2>Stav migrace</h2>
 
-                {% for status in session['datasets'].keys() %}
-                <h3>Stav: {{ status }}</h3>
-                <table class="table">
-                    <tbody>
-                    {% for dataset in session['datasets'][status] %}
-                    <tr>
-                        <th>
-                            {{ dataset }}
-                        </th>
-                        <td>
-                            <a href="{{url_for('site.download', dataset=dataset) }}" type="button" class="btn btn-default">Stáhnout</a>
-                            <a href="{{url_for('site.migrate', dataset=dataset) }}" type="button" class="btn btn-default">Zmigrovat ručně</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-                {% endfor %}
+                <h3>Stav: Datové sady staženy, připraveny k migraci</h3>
+
+
+                <form method=post>
+                    {{ migration_form.csrf_token }}
+                    <div class="panel" id="panel-migration">
+                        <div class="panel-heading"><h3 class="panel-title">Konfigurace migrace</h3></div>
+                        <div class="panel-body">
+                            <div class="form-group ">
+                                {{ migration_form.variant.label(class='control-label', text='Které datové sady máme
+                                zmigrovat?')
+                                }}
+                                {{ migration_form.variant(class='form-control') }}
+                                {% for error in migration_form.variant.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+
+                        {% for status in form.datasets.keys() %}
+                        <div class="panel panel-default">
+                            <div class="panel-heading" role="tab" id="headingOne">
+                                <h4 class="panel-title">
+                                    <a role="button" data-toggle="collapse" href="#datasets-info-{{ status }}"
+                                       aria-expanded="true" aria-controls="datasets-info-{{ status }}">
+                                        Seznam datových sad ve stavu: {{ form.get_status_translation(status) }}
+                                    </a>
+                                </h4>
+                            </div>
+                            <div class="collapse" id="datasets-info-{{ status }}">
+                                <div class="panel-collapse collapse in">
+                                    <table class="table">
+                                        <thead>
+                                        <tr>
+                                            <th>Identifikátor sady</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for dataset in form.datasets[status] %}
+                                        <tr>
+                                            <th>
+                                                {{ dataset }}
+                                            </th>
+                                        </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        {{ migration_form.datasets(value=form.datasets) }}
+                    </div>
+                    <div class="form-group ">
+                        <div class="col-sm-12 col-md-6 col-lg-6 col-right">
+                            {{ migration_form.migration_form_submit(class='btn btn-primary btn-centered') }}
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

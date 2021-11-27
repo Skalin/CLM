@@ -15,7 +15,6 @@ class LKODUser:
         content = json.loads(data.content)
         if 'accessToken' not in content:
             session['lkod'] = None
-            print("return false")
             return False
 
         self.access_token = content['accessToken']

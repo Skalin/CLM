@@ -1,44 +1,38 @@
 from flask import flash, redirect, url_for, session
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, HiddenField
 from wtforms.validators import DataRequired, URL, Length
 import requests
 from app.src.models.LKODUser import LKODUser
 from app.src.models.Migrator import Migrator, CONSTANT_JSON_VALID, CONSTANT_JSON_INVALID
-from app.src.models.Migration import STATUS_INIT, STATUS_READY
 
 
-class LoginForm(FlaskForm):
+class MigrationForm(FlaskForm):
     user = None
     migrator = None
-    datasets = []
-    status = STATUS_INIT
-    ckan_server_url = StringField('URL CKAN API serveru', validators=[DataRequired(), URL()])
-    ckan_api_key = StringField('API klíč CKAN', validators=[Length(0, 50)])
-    lkod_server_url = StringField('URL LKOD API serveru', validators=[DataRequired(), URL()])
-    company_vatin = StringField('IČO', validators=[DataRequired()])
-    lkod_company_id = StringField('ID', validators=[DataRequired()])
-    username = StringField('LKOD Už. jméno', validators=[DataRequired()])
-    password = PasswordField('LKOD Heslo', validators=[DataRequired()])
-    login_form_submit = SubmitField('Načíst datové sady')
+    datasets = HiddenField('Seznam datových sad', validators=[DataRequired()])
+    variant = SelectField('Varianta', validators=[DataRequired()], choices=[('all', 'Vše'), ('valid', 'Pouze validní'),('invalid', 'Pouze nevalidní')], default=0)
+    migration_form_submit = SubmitField('Spustit migraci')
 
     def process_data(self):
+        migration_status = False
         if self.check_servers() is False or self.login() is False:
-            return False
-        self.migrator = Migrator(self.lkod_server_url.data, self.ckan_server_url.data, self.ckan_api_key.data, self.company_vatin.data)
-        self.datasets = self.migrator.prepare_datasets()
-        session['migrator'] = {'lkod': {'url': self.lkod_server_url.data, 'organizationId': self.lkod_company_id.data, 'accessToken': self.user.access_token}, 'ckan': {'url': self.ckan_server_url.data, 'api_key': self.ckan_api_key.data}, 'vatin': self.company_vatin.data,}
-        self.status = STATUS_READY
-        return True
+            return migration_status
+        print('still migrating')
+        self.migrator = Migrator(self.lkod_server_url.data, self.ckan_server_url.data, self.ckan_api_key.data, self.company_vatin.data, self.variant.data)
+        migration_status = self.migrator.migrate()
+        session['datasets'] = self.get_migration_datasets()
+        session['migrator'] = {'lkod': {'url': self.lkod_server_url.data}, 'ckan': {'url': self.ckan_server_url.data, 'api_key': self.ckan_api_key.data}, 'vatin': self.company_vatin.data, 'variant': self.variant.data}
+        return migration_status
 
     def get_migration_datasets(self):
         return self.migrator.datasets if self.migrator is not None else []
 
     def get_status_translation(self, status):
         if status == CONSTANT_JSON_VALID:
-            return 'Plně zmigrovatelné'
+            return 'Zpracováno'
         elif status == CONSTANT_JSON_INVALID:
-            return 'Zmigrovatelné s úpravami'
+            return 'Ke zpracování'
 
     def logout(self):
         if 'datasets' in session:
@@ -57,15 +51,18 @@ class LoginForm(FlaskForm):
 
     def check_servers(self):
         if self.check_server(self.ckan_server_url.data) is False:
-            flash("CKAN API není dostupné. Prosím kontaktujte provozovatele svého lokálního katalogu CKAN.")
+            print("error in ckan")
+            flash("CKAN is not available!")
             return False
 
         if self.check_server(self.lkod_server_url.data) is False:
-            flash("LKOD API není dostupné. Prosím kontaktujte provozovatele svého lokálního katalogu LKOD.")
+            print("error in lkod")
+            flash("LKOD is not available!")
             return False
 
         if self.check_server(self.lkod_server_url.data+'/health') is False:
-            flash("LKOD API není dostupné. Prosím kontaktujte provozovatele svého lokálního katalogu LKOD.")
+            print("error in lkod")
+            flash("LKOD API is not available!")
             return False
 
     def login_CKAN(self):
@@ -86,5 +83,3 @@ class LoginForm(FlaskForm):
         except (requests.ConnectionError, requests.Timeout) as exception:
             return False
 
-    def is_ready(self):
-        return self.status == STATUS_READY

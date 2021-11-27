@@ -16,6 +16,7 @@ body {
     margin-right: auto;
     margin-left: auto;
     float: none;
+    text-align: center;
 }
 
 .jumbotron {
@@ -26,4 +27,15 @@ body {
 .btn {
     color:white;
     background-color: #2196f3;
+}
+
+.btn-center {
+    display:inline-block
+}
+
+
+.col-right {
+    margin-right: auto;
+    margin-left: auto;
+    float: none;
 }
