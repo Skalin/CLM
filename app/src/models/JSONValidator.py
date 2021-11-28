@@ -24,5 +24,5 @@ class JSONValidator:
             self.errors[dataset] = e
             return False
         except jsonschema.exceptions.ValidationError as e:
-            self.errors[dataset] = e
+            self.errors[dataset] = e.message
             return False

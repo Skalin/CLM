@@ -46,9 +46,8 @@ def logout():
     return redirect(url_for('site.index'))
 
 
-@site.route('/migrate/<dataset>', methods=['GET'])
-def migrate(dataset):
-    print(dataset)
+@site.route('/validate/<dataset>', methods=['GET'])
+def validate(dataset):
     if 'lkod' not in session and 'accessToken' not in session['lkod']:
         flash('Please log in again to migrate data')
         redirect(url_for('site.index'))
@@ -58,10 +57,14 @@ def migrate(dataset):
         redirect(url_for('site.index'))
 
     migrator = session['migrator']
-    lkod = session['lkod']
     migrator_cls = Migrator(migrator['lkod']['url'], migrator['ckan']['url'], migrator['ckan']['api_key'],
-                            migrator['vatin'], migrator['variant'])
-    form_data = migrator_cls.get_new_dataset(dataset)
+                            migrator['vatin'])
+    form_data = migrator_cls.get_new_dataset_object(dataset)
+    migrator_cls.json_validator.validate_json(form_data, dataset)
+    return migrator_cls.json_validator.errors[dataset]
+
+
+
     response = requests.post(lkod['url'] + '/datasets', data={'organizationId': 1},
                              headers={'Authorization': 'Bearer ' + lkod['accessToken']}).json()
     print(response)

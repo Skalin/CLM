@@ -4,7 +4,7 @@ import json
 class Fetcher:
     mapper_class = 'Mapper'
     config = None
-    list_action = 'list'
+    list_action = 'search'
     actions = ['list', 'show']
     datatypes = {
                     'package': {'class': 'PackageMapper'},
@@ -46,6 +46,7 @@ class Fetcher:
         return self.get_request(endpoint, params)
 
     def validate_endpoint(self, endpoint):
+        return True
         datatype, action = endpoint.split('_')
 
         if datatype in self.get_allowed_datatypes() is False:
