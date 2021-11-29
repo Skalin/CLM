@@ -15,15 +15,12 @@ class MigrationForm(FlaskForm):
     migration_form_submit = SubmitField('Spustit migraci')
 
     def process_data(self):
-
-        print(session)
         if 'migrator' not in session or 'lkod' not in session['migrator'] or 'ckan' not in session['migrator'] or 'vatin' not in session['migrator']:
             return False
-        print('not even processing')
         lkod = session['migrator']['lkod']
         ckan = session['migrator']['ckan']
         vatin = session['migrator']['vatin']
-        self.migrator = Migrator(lkod['url'], ckan['url'], ckan['api_key'], vatin, self.variant.data)
+        self.migrator = Migrator(lkod['url'], ckan['url'], ckan['api_key'], vatin, self.variant.data, self.datasets.data)
         return self.migrator.migrate()
 
     def get_migration_datasets(self):

@@ -17,7 +17,7 @@ class Migrator:
     vatin = ''
     datasets = {}
 
-    def __init__(self, lkod_url, ckan_url, access_token, vatin, migration_type=None):
+    def __init__(self, lkod_url, ckan_url, access_token, vatin, migration_type=None, datasets={'valid': [], 'invalid': []}):
         self.config = Config(ckan_url, access_token)
         self.vatin = vatin
         self.migration_type = migration_type
@@ -25,7 +25,7 @@ class Migrator:
         self.license_prefill = None
         self.frequency_prefill = None
         self.ruian_prefill = ['']
-        self.datasets = {'valid': [], 'invalid': []}
+        self.datasets = datasets
 
     def get_fetcher(self):
         if self.fetcher is None:
@@ -45,18 +45,20 @@ class Migrator:
     def migrate(self):
         self.fetch_datasets()
         for dataset in self.dataset_endpoints:
-            new_dataset = self.get_new_dataset_object(dataset)
-            self.migrate_dataset(new_dataset)
+            if self.migration_type == 'all':
+                self.migrate_dataset(dataset)
+            elif self.migration_type == 'valid' and dataset in self.datasets[CONSTANT_JSON_VALID]:
+                self.migrate_dataset(dataset)
+            elif self.migration_type == 'invalid' and dataset in self.datasets[CONSTANT_JSON_INVALID]:
+                self.migrate_dataset(dataset)
 
     def migrate_dataset(self, dataset):
-
+        dataset = self.get_new_dataset_object(dataset)
         if 'lkod' not in session:
             return False
-
         lkod = session['lkod']
         response = requests.post(lkod['url'] + '/datasets', data={'organizationId': lkod['organization']},
                                  headers={'Authorization': 'Bearer ' + lkod['accessToken']}).json()
-        print(response)
         if 'id' in response:
             dataset_id = response['id']
             session_response = requests.post(lkod['url'] + '/sessions', data={'datasetId': dataset_id},
@@ -101,8 +103,8 @@ class Migrator:
         if len(dataset['title']):
             new_dataset['název'] = {'cs': dataset['title']}
 
-        if len(repr(dataset['notes'])):
-            new_dataset['popis'] = {'cs': repr(dataset['notes'])}
+        if len(dataset['notes']):
+            new_dataset['popis'] = {'cs': dataset['notes'] if dataset['notes'] is not None else repr(dataset['notes'])}
 
         if 'frequency' in dataset:
             new_dataset['periodicita_aktualizace'] = self.convert_ISO_8601_to_eu_frequency(dataset['frequency'])
@@ -141,7 +143,6 @@ class Migrator:
         #    'konec': datetime.strptime(resource['last_modified'])
         # }
 
-        print(dataset)
         for resource in dataset['resources']:
             new_resource = {
                 'iri': 'https://data.gov.cz/lkod/mdcr/datové-sady/vld/distribuce/'+self.get_final_format(resource['mimetype']),
@@ -165,7 +166,6 @@ class Migrator:
                     'mimetype']
             new_dataset['distribuce'].append(new_resource)
 
-        print(new_dataset)
         return new_dataset
 
     def fetch_old_dataset(self, dataset):
