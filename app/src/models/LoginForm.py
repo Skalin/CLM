@@ -55,6 +55,9 @@ class LoginForm(FlaskForm):
             flash("Přihlášení k lokálnímu katalogu LKOD nebylo úspěšné.")
             return False
 
+        session['lkod']['organization'] = self.lkod_company_id.data
+        return True
+
     def check_servers(self):
         if self.check_server(self.ckan_server_url.data) is False:
             flash("CKAN API není dostupné. Prosím kontaktujte provozovatele svého lokálního katalogu CKAN.")

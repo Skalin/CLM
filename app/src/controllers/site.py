@@ -25,6 +25,7 @@ def index():
             return render_template(template_path + 'index.html', form=form, migration_form=migration_form)
 
     if request.method == 'POST' and migration_form.migration_form_submit.data and migration_form.validate_on_submit():
+        print('here')
         if migration_form.process_data() is not False:
             flash("Migrace provedena úspěšně. Prosíme ověřte datové sady ve svém lokálním katalogu.")
 
@@ -61,7 +62,7 @@ def validate(dataset):
                             migrator['vatin'])
     form_data = migrator_cls.get_new_dataset_object(dataset)
     migrator_cls.json_validator.validate_json(form_data, dataset)
-    return migrator_cls.json_validator.errors[dataset]
+    return migrator_cls.json_validator.errors[dataset] if len(migrator_cls.json_validator.errors) else 'Nenalezeny žádné chyby v datové sadě'
 
 
 

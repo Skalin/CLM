@@ -203,8 +203,11 @@
                                                 jQuery(document).ready(
                                                 function ($) {
                                                 $('[data-target=\'#{{dataset}}-modal\']').on("click", function () {
-                                                    var modal = $("#{{dataset}}-modal")
-                                                    $.get({url: modal.data('href'), success: function () {}})
+                                                    var $modal = $("#{{dataset}}-modal")
+                                                    $.get({url: $modal.data('href'), success: function (response) {
+                                                        $modal.find(".modal-body").html(response);
+
+                                                    }})
 
                                                 })
 
