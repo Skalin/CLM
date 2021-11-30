@@ -100,6 +100,9 @@ class Migrator:
             'prvek_rúian': [''],
         }
 
+        if len(dataset['maintaner']) and len(dataset['maintainer_email']):
+            new_dataset['kontaktní_bod'] = {'typ': 'Organizace', 'jméno': {'cs': dataset['maintaner']}, 'e-mail': 'mailto:'+dataset['maintainer_email']}
+
         if len(dataset['title']):
             new_dataset['název'] = {'cs': dataset['title']}
 
