@@ -43,13 +43,15 @@ class Migrator:
         return self.dataset_endpoints
 
     def migrate(self):
+        if type(self.datasets) is str:
+            self.datasets = eval(self.datasets)
         self.fetch_datasets()
         for dataset in self.dataset_endpoints:
             if self.migration_type == 'all':
                 self.migrate_dataset(dataset)
-            elif self.migration_type == 'valid' and dataset in self.datasets[CONSTANT_JSON_VALID]:
+            elif self.migration_type == 'valid' and dataset in self.datasets[self.migration_type]:
                 self.migrate_dataset(dataset)
-            elif self.migration_type == 'invalid' and dataset in self.datasets[CONSTANT_JSON_INVALID]:
+            elif self.migration_type == 'invalid' and dataset in self.datasets[self.migration_type]:
                 self.migrate_dataset(dataset)
 
     def migrate_dataset(self, dataset):
@@ -65,10 +67,15 @@ class Migrator:
                                              headers={'Authorization': 'Bearer ' + lkod['accessToken']}).json()
             session_id = session_response['id']
             user_data = {'accessToken': lkod['accessToken'], 'sessionId': session_id, 'datasetId': dataset_id}
-            form_response = requests.post(lkod['url'] + '/form-data',
+            print(json.dumps(dataset))
+            try:
+                form_response = requests.post(lkod['url'] + '/form-data',
                                           headers={'ContentType': 'application/x-www-form-urlencoded'},
-                                          json={'userData': json.dumps(user_data), 'formData': json.dumps(dataset)})
-            print(form_response.url)
+                                          json={'userData': json.dumps(user_data), 'formData': json.dumps(dataset)},)
+                print(form_response.url)
+            except requests.ConnectionError:
+                print("Connection error")
+                return False
             return True
 
     def prepare_datasets(self):
@@ -100,8 +107,8 @@ class Migrator:
             'prvek_rúian': [''],
         }
 
-        if len(dataset['maintaner']) and len(dataset['maintainer_email']):
-            new_dataset['kontaktní_bod'] = {'typ': 'Organizace', 'jméno': {'cs': dataset['maintaner']}, 'e-mail': 'mailto:'+dataset['maintainer_email']}
+        if len(dataset['maintainer']) and len(dataset['maintainer_email']):
+            new_dataset['kontaktní_bod'] = {'typ': 'Organizace', 'jméno': {'cs': dataset['maintainer']}, 'e-mail': 'mailto:'+dataset['maintainer_email']}
 
         if len(dataset['title']):
             new_dataset['název'] = {'cs': dataset['title']}
