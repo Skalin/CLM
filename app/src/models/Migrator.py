@@ -9,6 +9,8 @@ CONSTANT_JSON_VALID = 'valid'
 CONSTANT_JSON_INVALID = 'invalid'
 
 
+FREQUENCY_MAP = {'R/P10Y':'DECENNIAL','R/P4Y':'QUADRENNIAL','R/P3Y':'TRIENNIAL','R/P2Y':'BIENNIAL','R/P1Y':'ANNUAL', 'R/P6M': 'ANNUAL_2','R/P4M': 'ANNUAL_3','R/P3M': 'QUARTERLY', 'R/P2M': 'BIMONTHLY', 'R/P0.5M':'BIMONTHLY','R/P1M':'MONTHLY', 'R/P0.33M': 'MONTHLY_3', 'R/P1W': 'WEEKLY',  'R/P3.5D': 'WEEKLY_2', 'R/P0.33W': 'WEEKLY_3','R/P2W':'BIWEEKLY','R/P0.5W': 'BIWEEKLY','R/P1D': 'DAILY','R/PT1H':'HOURLY','R/PT1S':'UPDATE_CONT'}
+
 class Migrator:
     dataset_endpoints = []
     fetcher = None
@@ -107,16 +109,16 @@ class Migrator:
             'prvek_rúian': [''],
         }
 
-        if len(dataset['maintainer']) and len(dataset['maintainer_email']):
+        if dataset['maintainer'] is not None and len(dataset['maintainer']) and len(dataset['maintainer_email']):
             new_dataset['kontaktní_bod'] = {'typ': 'Organizace', 'jméno': {'cs': dataset['maintainer']}, 'e-mail': 'mailto:'+dataset['maintainer_email']}
 
         if len(dataset['title']):
             new_dataset['název'] = {'cs': dataset['title']}
 
-        if len(dataset['notes']):
+        if dataset['notes'] is not None and len(dataset['notes']):
             new_dataset['popis'] = {'cs': dataset['notes'] if dataset['notes'] is not None else repr(dataset['notes'])}
 
-        if 'frequency' in dataset:
+        if 'frequency' in dataset and self.convert_ISO_8601_to_eu_frequency(dataset['frequency']) is not None:
             new_dataset['periodicita_aktualizace'] = self.convert_ISO_8601_to_eu_frequency(dataset['frequency'])
 
         if 'spatial_uri' in dataset:
@@ -206,46 +208,9 @@ class Migrator:
         return ''
 
     def convert_ISO_8601_to_eu_frequency(self, value):
-        return_value = ''
-        if value == 'R/P10Y':
-            return_value = 'DECENNIAL'
-        elif value == 'R/P4Y':
-            return_value = 'QUADRENNIAL'
-        elif value == 'R/P3Y':
-            return_value = 'TRIENNIAL'
-        elif value == 'R/P2Y':
-            return_value = 'BIENNIAL'
-        elif value == 'R/P1Y':
-            return_value = 'ANNUAL'
-        elif value == 'R/P6M':
-            return_value = 'ANNUAL_2'
-        elif value == 'R/P4M':
-            return_value = 'ANNUAL_3'
-        elif value == 'R/P3M':
-            return_value = 'QUARTERLY'
-        elif value == 'R/P2M' or value == 'R/P0.5M':
-            return_value = 'BIMONTHLY'
-        elif value == 'R/P1M':
-            return_value = 'MONTHLY'
-        elif value == 'R/P0.33M':
-            return_value = 'MONTHLY_3'
-        elif value == 'R/P1W':
-            return_value = 'WEEKLY'
-        elif value == 'R/P3.5D':
-            return_value = 'WEEKLY_2'
-        elif value == 'R/P0.33W':
-            return_value = 'WEEKLY_3'
-        elif value == 'R/P2W' or value == 'R/P0.5W':
-            return_value = 'BIWEEKLY'
-        elif value == 'R/P1D':
-            return_value = 'DAILY'
-        elif value == 'R/PT1H':
-            return_value = 'HOURLY'
-        elif value == 'R/PT1S':
-            return_value = 'UPDATE_CONT'
-        else:
-            return_value = 'OTHER'
-        return 'http://publications.europa.eu/resource/authority/frequency/'+return_value
+        if value in FREQUENCY_MAP:
+            return 'http://publications.europa.eu/resource/authority/frequency/'+FREQUENCY_MAP[value]
+        return None
 
     def get_ruian_type(self, uri = None, ruian_type = None, ruian_code = None):
         if uri is not None:
@@ -271,3 +236,12 @@ class Migrator:
                 return ''
             return 'https://linked.cuzk.cz/resource/ruian/'+return_value+'/'+ruian_code
         return ''
+
+    def get_frequency_prefill_value(self):
+        ...
+
+    def get_license_prefill_prefill_value(self):
+        ...
+
+    def get_ruian_prefill_value(self):
+        ...

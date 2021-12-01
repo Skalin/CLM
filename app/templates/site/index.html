@@ -59,26 +59,6 @@
                             </div>
 
                             <div class="form-group ">
-                                {{ form.lkod_company_id.label(class='control-label', text='ID instituce v LKOD') }}
-                                <a class="" role="button" data-toggle="collapse" href="#lkod-company-id-info"
-                                   aria-expanded="false" aria-controls="collapseExample"><span
-                                        class="glyphicon glyphicon-search"></span>
-                                </a>
-                                <div class="collapse" id="lkod-company-id-info">
-                                    <div class="well">
-                                        ID instituce v LKOD je číselná hodnota, kterou Vám musí sdělit integrátor řešení
-                                        Lokálního katalogu. Organizace musí být v rámci lokálníh katalogu předem
-                                        založena.
-                                    </div>
-                                </div>
-
-                                {{ form.lkod_company_id(class='form-control') }}
-                                {% for error in form.lkod_company_id.errors %}
-                                <li>{{ error }}</li>
-                                {% endfor %}
-                            </div>
-
-                            <div class="form-group ">
                                 {{ form.username.label(class='control-label', text='Uživatelské jméno') }}
                                 {{ form.username(class='form-control') }}
                                 {% for error in form.username.errors %}
@@ -92,21 +72,51 @@
                                 <li>{{ error }}</li>
                                 {% endfor %}
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="panel">
-                        <div class="panel-heading"><h3 class="panel-title">Dodatečné parametry pro migraci</h3></div>
-                        <div class="panel-body">
+
                             <div class="form-group ">
                                 {{ form.company_vatin.label(class='control-label', text='IČO instituce') }}
+                                <a class="" role="button" data-toggle="collapse" href="#lkod-company-vatin-info"
+                                   aria-expanded="false" aria-controls="collapseExample"><span
+                                        class="glyphicon glyphicon-search"></span>
+                                </a>
+                                <div class="collapse" id="lkod-company-vatin-info">
+                                    <div class="well">
+                                        IČO instituce by mělo odpovídat IČO jedné z organizací v aplikaci LKOD.
+                                        <br/>
+                                        Instituce v této aplikaci musí být zaregistrována. Pokud byla organizace sjednocena s jinou,
+                                        prosím vyplňte ID organizace pro LKOD v dalším poli.
+                                        <br/>
+                                        <br/>
+                                        ID instituce Vám sdělí správce aplikace.
+                                        <br/>
+                                        <br/>
+                                        Pokud vyplníte <strong>ID instituce</strong>, automaticky bude brato pro účely migrace toto ID a ID instituce <strong>nebude</strong> dohledáváno podle IČO.
+                                    </div>
+                                </div>
                                 {{ form.company_vatin(class='form-control') }}
                                 {% for error in form.company_vatin.errors %}
                                 <li>{{ error }}</li>
                                 {% endfor %}
                             </div>
+                            <div class="form-group ">
+
+                                <a class="" role="button" data-toggle="collapse" href="#lkod-company-id-info"
+                                   aria-expanded="false" aria-controls="collapseExample">Manuální Nastavení ID instituce <span
+                                        class="glyphicon glyphicon-search"></span>
+                                </a>
+                                <div class="collapse" id="lkod-company-id-info">
+                                        {{ form.lkod_company_id.label(class='control-label', text='ID instituce v LKOD') }}
+                                        {{ form.lkod_company_id(class='form-control') }}
+                                        {% for error in form.lkod_company_id.errors %}
+                                        <li>{{ error }}</li>
+                                        {% endfor %}
+                                </div>
+                            </div>
+
                         </div>
                     </div>
+
                     <div class="form-group ">
                         <div class="col-sm-12 col-md-6 col-lg-6 col-right">
                             {{ form.login_form_submit(class='btn btn-primary') }}
@@ -172,7 +182,8 @@
                                             </th>
                                             {% if status == 'invalid' %}
                                             <td>
-                                                <button type="button" data-toggle="modal" data-target="#{{dataset}}-modal">
+                                                <button type="button" data-toggle="modal"
+                                                        data-target="#{{dataset}}-modal">
                                                     Prohlédnout chyby
                                                 </button>
                                                 <div class="modal fade" id="{{dataset}}-modal" tabindex="-1"
@@ -212,6 +223,8 @@
                                                 })
 
                                                 })
+
+
 
                                             </script>
                                             {% endif %}

@@ -21,9 +21,9 @@ def index():
     migration_form = MigrationForm()
     if request.method == 'POST' and form.login_form_submit.data and form.validate_on_submit():
         if form.process_data() is not False:
-            flash("Fetching data was successful!")
             return render_template(template_path + 'index.html', form=form, migration_form=migration_form)
 
+    print(migration_form.validate_on_submit())
     if request.method == 'POST' and migration_form.migration_form_submit.data and migration_form.validate_on_submit():
         if migration_form.process_data() is not False:
             flash("Migrace provedena úspěšně. Prosíme ověřte datové sady ve svém lokálním katalogu.")

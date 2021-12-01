@@ -1,10 +1,10 @@
 from flask import flash, redirect, url_for, session
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectField, HiddenField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, HiddenField, BooleanField
 from wtforms.validators import DataRequired, URL, Length
 import requests
 from app.src.models.LKODUser import LKODUser
-from app.src.models.Migrator import Migrator, CONSTANT_JSON_VALID, CONSTANT_JSON_INVALID
+from app.src.models.Migrator import Migrator, CONSTANT_JSON_VALID, CONSTANT_JSON_INVALID, FREQUENCY_MAP
 
 
 class MigrationForm(FlaskForm):
@@ -12,9 +12,12 @@ class MigrationForm(FlaskForm):
     migrator = None
     datasets = HiddenField('Seznam datových sad', validators=[DataRequired()])
     variant = SelectField('Varianta', validators=[DataRequired()], choices=[('all', 'Vše'), ('valid', 'Pouze validní'),('invalid', 'Pouze nevalidní')], default=0)
+    #frequency_prefill_switch = BooleanField('Nastavit výchozí hodnotu frekvence', validators=[], default=0)
+    #frequency_prefill= SelectField('Hodnota frekvence', choices=[], validators=[])
     migration_form_submit = SubmitField('Spustit migraci')
 
     def process_data(self):
+        print(session)
         if 'migrator' not in session or 'lkod' not in session['migrator'] or 'ckan' not in session['migrator'] or 'vatin' not in session['migrator']:
             return False
         lkod = session['migrator']['lkod']
