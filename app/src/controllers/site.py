@@ -26,7 +26,7 @@ def index():
     print(migration_form.validate_on_submit())
     if request.method == 'POST' and migration_form.migration_form_submit.data and migration_form.validate_on_submit():
         if migration_form.process_data() is not False:
-            flash("Migrace provedena úspěšně. Prosíme ověřte datové sady ve svém lokálním katalogu.")
+            flash("Migrace provedena úspěšně. Prosíme ověřte datové sady ve svém lokálním katalogu.", 'success')
 
     return render_template(template_path + 'index.html', form=form)
 
@@ -49,17 +49,18 @@ def logout():
 @site.route('/validate/<dataset>', methods=['GET'])
 def validate(dataset):
     if 'lkod' not in session and 'accessToken' not in session['lkod']:
-        flash('Please log in again to migrate data')
+        flash('Please log in again to migrate data', 'warning')
         redirect(url_for('site.index'))
 
     if 'migrator' not in session:
-        flash('Please reinsert data into form, to be able to submit data')
+        flash('Please reinsert data into form, to be able to submit data', 'warning')
         redirect(url_for('site.index'))
 
     migrator = session['migrator']
     migrator_cls = Migrator(migrator['lkod']['url'], migrator['ckan']['url'], migrator['ckan']['api_key'],
                             migrator['vatin'])
     form_data = migrator_cls.get_new_dataset_object(dataset)
+    print(form_data)
     migrator_cls.json_validator.validate_json(form_data, dataset)
     return migrator_cls.json_validator.errors[dataset] if len(migrator_cls.json_validator.errors) else 'Nenalezeny žádné chyby v datové sadě'
 

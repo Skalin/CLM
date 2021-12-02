@@ -101,7 +101,7 @@ class Migrator:
             'iri': 'https://data.gov.cz/lkod/mdcr/datové-sady/vld',
             'typ': 'Datová sada',
             'název': {'cs': ''},
-            'popis': {'cs': ''},
+            'popis': {'cs': 'Nevyplněn'},
             'poskytovatel': 'https://rpp-opendata.egon.gov.cz/odrpp/zdroj/orgán-veřejné-moci/' + self.vatin,
             'téma': ["http://publications.europa.eu/resource/authority/data-theme/OP_DATPRO"],
             'periodicita_aktualizace': '',
@@ -116,7 +116,7 @@ class Migrator:
             new_dataset['název'] = {'cs': dataset['title']}
 
         if dataset['notes'] is not None and len(dataset['notes']):
-            new_dataset['popis'] = {'cs': dataset['notes'] if dataset['notes'] is not None else repr(dataset['notes'])}
+            new_dataset['popis'] = {'cs': dataset['notes']}
 
         if 'frequency' in dataset and self.convert_ISO_8601_to_eu_frequency(dataset['frequency']) is not None:
             new_dataset['periodicita_aktualizace'] = self.convert_ISO_8601_to_eu_frequency(dataset['frequency'])
@@ -131,8 +131,14 @@ class Migrator:
         if new_dataset['prvek_rúian'] == [''] and prefill_ruian:
             new_dataset['prvek_rúian'] = self.ruian_prefill
 
-        new_dataset['dokumentace'] = 'https://operator-ict.gitlab.io/golemio/documentation'
-        new_dataset['poskytovatel'] = '/'.join(('https://linked.opendata.cz/zdroj/ekonomický-subjekt/', self.vatin))
+        new_dataset['poskytovatel'] = 'https://linked.opendata.cz/zdroj/ekonomický-subjekt/'+ self.vatin
+
+        if 'theme' in dataset and len(dataset['theme']):
+            themes = dataset['theme'].split()
+            new_dataset['koncept_euroVoc'] = themes
+
+        if 'schema' in dataset and len(dataset['schema']):
+            new_dataset['dokumentace'] = dataset['schema']
 
         if 'extras' in dataset:
             extras = dataset['extras']
