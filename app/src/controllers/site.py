@@ -32,7 +32,7 @@ def index():
 
 @site.route('/authors', methods=['GET'])
 def authors():
-    ...
+    return render_template(template_path + 'contact.html');
 
 @site.route('/logout', methods=['GET'])
 def logout():
