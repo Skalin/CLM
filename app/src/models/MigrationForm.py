@@ -12,6 +12,12 @@ class MigrationForm(FlaskForm):
     migrator = None
     datasets = HiddenField('Seznam datových sad', validators=[DataRequired()])
     variant = SelectField('Varianta', validators=[DataRequired()], choices=[('all', 'Vše'), ('valid', 'Pouze validní'),('invalid', 'Pouze nevalidní')], default=0)
+    prefill_frequency_check = BooleanField('Předvyplnit frekvenci',default=0)
+    prefill_frequency = SelectField('Hodnota frekvence', validators=[DataRequired()], choices=[(0, 'Žádná'), ('irreg', 'Občasná aktualizace'),('never', 'Nikdy neaktualizováno')], default=0)
+    prefill_ruian_check = BooleanField('Předvyplnit frekvenci',default=0)
+    prefill_ruian = SelectField('Hodnota RÚIAN', validators=[DataRequired()], choices=[(0, 'Žádná'), ('1', 'Celá ČR'),('invalid', 'Pouze nevalidní')], default=0)
+    prefill_license_check = BooleanField('Předvyplnit frekvenci',default=0)
+    prefill_license = SelectField('Licence', validators=[DataRequired()], choices=[(0, 'Žádná'), ('valid', 'Pouze validní'),('invalid', 'Pouze nevalidní')], default=0)
     #frequency_prefill_switch = BooleanField('Nastavit výchozí hodnotu frekvence', validators=[], default=0)
     #frequency_prefill= SelectField('Hodnota frekvence', choices=[], validators=[])
     migration_form_submit = SubmitField('Spustit migraci')
@@ -24,7 +30,7 @@ class MigrationForm(FlaskForm):
         ckan = session['migrator']['ckan']
         vatin = session['migrator']['vatin']
         self.migrator = Migrator(lkod['url'], ckan['url'], ckan['api_key'], vatin, self.variant.data, self.datasets.data)
-        return self.migrator.migrate()
+        return self.migrator.migrate(self)
 
     def get_migration_datasets(self):
         return self.migrator.datasets if self.migrator is not None else []

@@ -140,7 +140,7 @@
                     <div class="panel" id="panel-migration">
                         <div class="panel-heading"><h3 class="panel-title">Konfigurace migrace</h3></div>
                         <div class="panel-body">
-                            <div class="form-group ">
+                            <div class="form-group">
                                 {{ migration_form.variant.label(class='control-label', text='Které datové sady máme
                                 zmigrovat?')
                                 }}
@@ -149,8 +149,117 @@
                                 <li>{{ error }}</li>
                                 {% endfor %}
                             </div>
+                            <div class="form-group">
+                                {{ migration_form.prefill_frequency_check.label(class='control-label', text='Předvyplnit frekvenci?') }}
+                                {{ migration_form.prefill_frequency_check(class='') }}
+                                {% for error in migration_form.prefill_frequency_check.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                                <script>
+                                    jQuery(document).ready(
+                                    function ($) {
+                                    $('#prefill_frequency_check').on("click", function () {
+                                        console.log($(this));
+                                        var $el = $('#prefill_frequency');
+                                        if ($(this).is(":checked"))
+                                        {
+                                        $el.parent().slideDown();
+                                        }
+                                        else {
+                                        $el.parent().slideUp();
+                                        }
+
+
+                                    })
+
+                                    })
+
+
+
+                                </script>
+                            </div>
+                            <div class="form-group" style="display:none">
+                                {{ migration_form.prefill_frequency.label(class='control-label', text='Frekvence') }}
+                                {{ migration_form.prefill_frequency(class='form-control') }}
+                                {% for error in migration_form.prefill_frequency.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group">
+                                {{ migration_form.prefill_ruian_check.label(class='control-label', text='Předvyplnit RÚIAN?') }}
+                                {{ migration_form.prefill_ruian_check(class='') }}
+                                {% for error in migration_form.prefill_ruian_check.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                                <script>
+                                    jQuery(document).ready(
+                                    function ($) {
+                                    $('#prefill_ruian_check').on("click", function () {
+                                        console.log($(this));
+                                        var $el = $('#prefill_ruian');
+                                        if ($(this).is(":checked"))
+                                        {
+                                        $el.parent().slideDown();
+                                        }
+                                        else {
+                                        $el.parent().slideUp();
+                                        }
+
+
+                                    })
+
+                                    })
+
+
+
+                                </script>
+                            </div>
+                            <div class="form-group" style="display:none">
+                                {{ migration_form.prefill_ruian.label(class='control-label', text='RÚIAN') }}
+                                {{ migration_form.prefill_ruian(class='form-control') }}
+                                {% for error in migration_form.prefill_ruian.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group">
+                                {{ migration_form.prefill_license_check.label(class='control-label', text='Předvyplnit licenci?') }}
+                                {{ migration_form.prefill_license_check(class='') }}
+                                {% for error in migration_form.prefill_license_check.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                                <script>
+                                    jQuery(document).ready(
+                                    function ($) {
+                                    $('#prefill_license_check').on("click", function () {
+                                        console.log($(this));
+                                        var $el = $('#prefill_license');
+                                        if ($(this).is(":checked"))
+                                        {
+                                        $el.parent().slideDown();
+                                        }
+                                        else {
+                                        $el.parent().slideUp();
+                                        }
+
+
+                                    })
+
+                                    })
+
+
+
+                                </script>
+                            </div>
+                            <div class="form-group" style="display:none">
+                                {{ migration_form.prefill_license.label(class='control-label', text='Licence') }}
+                                {{ migration_form.prefill_license(class='form-control') }}
+                                {% for error in migration_form.prefill_license.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
+
                     <div class="form-group">
 
                         {% for status in form.datasets.keys() %}

@@ -29,7 +29,9 @@
             <ul class="nav navbar-nav">
                 <li class="{% if request.endpoint=='site.index' %}active{%endif %}"><a href="{{url_for('site.index') }}">Homepage</a>
                 </li>
+                <!--
                 <li class="{% if request.endpoint=='site.installation' %}active{%endif %}"><a href="{{url_for('site.installation') }}">Instalace</a></li>
+                -->
                 <li class="{% if request.endpoint=='site.authors' %}active{%endif %}"><a href="{{url_for('site.authors') }}">Autoři</a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">

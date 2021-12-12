@@ -1,4 +1,6 @@
 import json
+import sys
+
 import requests
 from flask import session
 from app.src.components.clm.Config import Config
@@ -44,20 +46,20 @@ class Migrator:
             self.dataset_endpoints.append(dataset['name'])
         return self.dataset_endpoints
 
-    def migrate(self):
+    def migrate(self, form):
         if type(self.datasets) is str:
             self.datasets = eval(self.datasets)
         self.fetch_datasets()
         for dataset in self.dataset_endpoints:
             if self.migration_type == 'all':
-                self.migrate_dataset(dataset)
+                self.migrate_dataset(dataset, form)
             elif self.migration_type == 'valid' and dataset in self.datasets[self.migration_type]:
-                self.migrate_dataset(dataset)
+                self.migrate_dataset(dataset, form)
             elif self.migration_type == 'invalid' and dataset in self.datasets[self.migration_type]:
-                self.migrate_dataset(dataset)
+                self.migrate_dataset(dataset, form)
 
-    def migrate_dataset(self, dataset):
-        dataset = self.get_new_dataset_object(dataset)
+    def migrate_dataset(self, dataset, form=None):
+        dataset = self.get_new_dataset_object(dataset, form)
         if 'lkod' not in session:
             return False
         lkod = session['lkod']
@@ -89,11 +91,11 @@ class Migrator:
     def get_new_dataset(self, dataset):
         return json.dumps(self.get_new_dataset_object(dataset))
 
-    def get_new_dataset_object(self, dataset):
+    def get_new_dataset_object(self, dataset, form=None):
         old = self.fetch_old_dataset(dataset)
-        return self.prepare_dataset_json_object(old)
+        return self.prepare_dataset_json_object(old, form)
 
-    def prepare_dataset_json_object(self, dataset, prefill_licenses=False, prefill_frequency=False, prefill_ruian=False):
+    def prepare_dataset_json_object(self, dataset, form=None, prefill_ruian=False):
         if not dataset:
             return {}
         new_dataset = {
@@ -121,6 +123,10 @@ class Migrator:
         if 'frequency' in dataset and self.convert_ISO_8601_to_eu_frequency(dataset['frequency']) is not None:
             new_dataset['periodicita_aktualizace'] = self.convert_ISO_8601_to_eu_frequency(dataset['frequency'])
 
+        if form is not None and form.prefill_frequency_check.data and ('periodicita_aktualizace' in new_dataset or new_dataset['periodicita_aktualizace'] == ''):
+            new_dataset['periodicita_aktualizace'] = 'http://publications.europa.eu/resource/authority/frequency/'+form.prefill_frequency.data.upper()
+
+
         if 'spatial_uri' in dataset:
             new_dataset['prvek_rúian'] = [self.get_ruian_type(dataset['spatial_uri'])]
         elif 'ruian_type' in dataset and 'ruian_code' in dataset:
@@ -128,8 +134,8 @@ class Migrator:
         else:
             new_dataset['prvek_rúian'] = ['']
 
-        if new_dataset['prvek_rúian'] == [''] and prefill_ruian:
-            new_dataset['prvek_rúian'] = self.ruian_prefill
+        if new_dataset['prvek_rúian'] == [''] and form is not None and form.prefill_ruian_check.data:
+            new_dataset['prvek_rúian'] = ['https://linked.cuzk.cz/resource/ruian/stat/1']
 
         new_dataset['poskytovatel'] = 'https://linked.opendata.cz/zdroj/ekonomický-subjekt/'+ self.vatin
 
