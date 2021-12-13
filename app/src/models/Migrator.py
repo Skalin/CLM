@@ -93,6 +93,7 @@ class Migrator:
 
     def get_new_dataset_object(self, dataset, form=None):
         old = self.fetch_old_dataset(dataset)
+        print(old)
         return self.prepare_dataset_json_object(old, form)
 
     def prepare_dataset_json_object(self, dataset, form=None, prefill_ruian=False):
@@ -171,13 +172,7 @@ class Migrator:
             new_resource = {
                 'iri': 'https://data.gov.cz/lkod/mdcr/datové-sady/vld/distribuce/'+self.get_final_format(resource['mimetype']),
                 'typ': 'Distribuce',
-                'podmínky_užití': {
-                    'typ': 'Specifikace podmínek užití',
-                    'autorské_dílo': resource['license_link'] if 'license_link' in resource else dataset['license_url'] if 'license_url' in dataset else '',
-                    'databáze_jako_autorské_dílo': dataset['license_url'] if 'license_url' in dataset else '',
-                    'databáze_chráněná_zvláštními_právy': 'https://data.gov.cz/podmínky-užití/není-chráněna-zvláštním-právem-pořizovatele-databáze/',
-                    'osobní_údaje': 'https://data.gov.cz/podmínky-užití/neobsahuje-osobní-údaje/',
-                },
+                'podmínky_užití': self.get_license_prefill_prefill_value(dataset, resource, form),
                 'název': {
                     'cs': resource['name']
                 },
@@ -252,8 +247,27 @@ class Migrator:
     def get_frequency_prefill_value(self):
         ...
 
-    def get_license_prefill_prefill_value(self):
-        ...
+    def get_license_prefill_prefill_value(self, dataset, resource, form = None):
+        license_obj = {'typ': 'Specifikace podmínek užití', 'autorské_dílo': ''}
+        if 'license_link' in resource:
+            license_obj['autorské_dílo'] = resource['license_link']
+        if len(license_obj['autorské_dílo']) == 0 and 'license_url' in dataset:
+            license_obj['autorské_dílo'] = dataset['license_url']
+
+        license_obj['databáze_jako_autorské_dílo']= dataset['license_url'] if 'license_url' in dataset else ''
+        license_obj['databáze_chráněná_zvláštními_právy'] = 'https://data.gov.cz/podmínky-užití/není-chráněna-zvláštním-právem-pořizovatele-databáze/'
+
+        if len(license_obj['autorské_dílo']) == 0 and form is not None and form.prefill_license_check.data:
+            if form.prefill_license.data == 'cc4':
+                license_obj['autorské_dílo'] = 'https://creativecommons.org/licenses/by/4.0'
+            elif form.prefill_license.data == 'none':
+                license_obj['autorské_dílo'] = 'https://data.gov.cz/podmínky-užití/neobsahuje-autorská-díla/'
+
+        if len(license_obj['databáze_jako_autorské_dílo']) == 0 and form is not None and form.prefill_license_check.data:
+            if form.prefill_license.data == 'none':
+                license_obj['databáze_jako_autorské_dílo'] = 'https://data.gov.cz/podmínky-užití/není-autorskoprávně-chráněnou-databází/'
+
+        return license_obj
 
     def get_ruian_prefill_value(self):
         ...
