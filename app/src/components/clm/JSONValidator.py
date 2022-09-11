@@ -13,7 +13,7 @@ class JSONValidator:
         self.api_url = api_url
         self.schema = requests.get('https://ofn.gov.cz/rozhran%C3%AD-katalog%C5%AF-otev%C5%99en%C3%BDch-dat/2021-01-11/sch%C3%A9mata/datov%C3%A1-sada.json').json()
 
-    def validate_json(self, data, dataset):
+    def validate_json(self, data):
         try:
             validator = Draft7Validator(self.schema)
             validator.validate(data)

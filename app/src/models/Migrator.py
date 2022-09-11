@@ -1,19 +1,16 @@
 import json
 import sys
 
+from app.src.models.NKODDataset import NKODDataset, CONSTANT_JSON_VALID, CONSTANT_JSON_INVALID
+
 import requests
 from flask import session
 from app.src.components.clm.Config import Config
 from app.src.components.clm.Fetcher import Fetcher
 from app.src.models.JSONValidator import JSONValidator
 
-CONSTANT_JSON_VALID = 'valid'
-CONSTANT_JSON_INVALID = 'invalid'
-
-
-FREQUENCY_MAP = {'R/P10Y':'DECENNIAL','R/P4Y':'QUADRENNIAL','R/P3Y':'TRIENNIAL','R/P2Y':'BIENNIAL','R/P1Y':'ANNUAL', 'R/P6M': 'ANNUAL_2','R/P4M': 'ANNUAL_3','R/P3M': 'QUARTERLY', 'R/P2M': 'BIMONTHLY', 'R/P0.5M':'BIMONTHLY','R/P1M':'MONTHLY', 'R/P0.33M': 'MONTHLY_3', 'R/P1W': 'WEEKLY',  'R/P3.5D': 'WEEKLY_2', 'R/P0.33W': 'WEEKLY_3','R/P2W':'BIWEEKLY','R/P0.5W': 'BIWEEKLY','R/P1D': 'DAILY','R/PT1H':'HOURLY','R/PT1S':'UPDATE_CONT'}
-
 class Migrator:
+    lkod_url = ''
     dataset_endpoints = []
     fetcher = None
     config = None
@@ -21,10 +18,14 @@ class Migrator:
     vatin = ''
     datasets = {}
 
-    def __init__(self, lkod_url, ckan_url, access_token, vatin, migration_type=None, datasets={'valid': [], 'invalid': []}):
+    def __init__(self, lkod_url, ckan_url, access_token, vatin, migration_type=None, datasets=None):
+        if datasets is None:
+            datasets = {CONSTANT_JSON_VALID: [], CONSTANT_JSON_INVALID: []}
+
         self.config = Config(ckan_url, access_token)
         self.vatin = vatin
         self.migration_type = migration_type
+        self.lkod_url = lkod_url
         self.json_validator = JSONValidator(lkod_url)
         self.license_prefill = None
         self.frequency_prefill = None
@@ -77,15 +78,22 @@ class Migrator:
                                           headers={'ContentType': 'application/x-www-form-urlencoded'},
                                           json={'userData': json.dumps(user_data), 'formData': json.dumps(dataset)},)
                 print(form_response.url)
+                self.migrate_resources_for_dataset(lkod['url'], dataset, dataset_id)
             except requests.ConnectionError:
                 print("Connection error")
                 return False
             return True
 
-    def prepare_datasets(self):
+    def migrate_resources_for_dataset(self, lkod_url, dataset, dataset_id):
+        for resource in dataset.distribuce:
+            file = requests.get(resource.soubor_ke_stažení, stream=True)
+            requests.post(lkod_url+'/datasets/'+dataset_id+'/files', headers={'ContentType': 'multipart/form-data'}, json={'datasetFile':file})
+
+    def prepare_datasets(self, form=None):
         self.fetch_datasets()
         for dataset in self.dataset_endpoints:
-            self.validate_dataset(dataset=dataset)
+            dataset_model = NKODDataset(self.lkod_url, self.vatin, dataset, form)
+            dataset_model.validate()
         return self.datasets
 
     def get_new_dataset(self, dataset):
@@ -93,99 +101,14 @@ class Migrator:
 
     def get_new_dataset_object(self, dataset, form=None):
         old = self.fetch_old_dataset(dataset)
-        print(old)
         return self.prepare_dataset_json_object(old, form)
 
-    def prepare_dataset_json_object(self, dataset, form=None, prefill_ruian=False):
+    def prepare_dataset_json_object(self, dataset, form=None):
         if not dataset:
             return {}
-        new_dataset = {
-            '@context': 'https://ofn.gov.cz/rozhraní-katalogů-otevřených-dat/2021-01-11/kontexty/rozhraní-katalogů-otevřených-dat.jsonld',
-            'iri': 'https://data.gov.cz/lkod/mdcr/datové-sady/vld',
-            'typ': 'Datová sada',
-            'název': {'cs': ''},
-            'popis': {'cs': 'Nevyplněn'},
-            'poskytovatel': 'https://rpp-opendata.egon.gov.cz/odrpp/zdroj/orgán-veřejné-moci/' + self.vatin,
-            'téma': ["http://publications.europa.eu/resource/authority/data-theme/OP_DATPRO"],
-            'periodicita_aktualizace': '',
-            'klíčové_slovo': {'cs': []},
-            'prvek_rúian': [''],
-        }
-
-        if dataset['maintainer'] is not None and len(dataset['maintainer']) and len(dataset['maintainer_email']):
-            new_dataset['kontaktní_bod'] = {'typ': 'Organizace', 'jméno': {'cs': dataset['maintainer']}, 'e-mail': 'mailto:'+dataset['maintainer_email']}
-
-        if len(dataset['title']):
-            new_dataset['název'] = {'cs': dataset['title']}
-
-        if dataset['notes'] is not None and len(dataset['notes']):
-            new_dataset['popis'] = {'cs': dataset['notes']}
-
-        if 'frequency' in dataset and self.convert_ISO_8601_to_eu_frequency(dataset['frequency']) is not None:
-            new_dataset['periodicita_aktualizace'] = self.convert_ISO_8601_to_eu_frequency(dataset['frequency'])
-
-        if form is not None and form.prefill_frequency_check.data and ('periodicita_aktualizace' in new_dataset or new_dataset['periodicita_aktualizace'] == ''):
-            new_dataset['periodicita_aktualizace'] = 'http://publications.europa.eu/resource/authority/frequency/'+form.prefill_frequency.data.upper()
-
-
-        if 'spatial_uri' in dataset:
-            new_dataset['prvek_rúian'] = [self.get_ruian_type(dataset['spatial_uri'])]
-        elif 'ruian_type' in dataset and 'ruian_code' in dataset:
-            new_dataset['prvek_rúian'] = [self.get_ruian_type(dataset['ruian_type'], dataset['ruian_code'])]
-        else:
-            new_dataset['prvek_rúian'] = ['']
-
-        if new_dataset['prvek_rúian'] == [''] and form is not None and form.prefill_ruian_check.data:
-            new_dataset['prvek_rúian'] = ['https://linked.cuzk.cz/resource/ruian/stat/1']
-
-        new_dataset['poskytovatel'] = 'https://linked.opendata.cz/zdroj/ekonomický-subjekt/'+ self.vatin
-
-        if 'theme' in dataset and len(dataset['theme']):
-            themes = dataset['theme'].split()
-            new_dataset['koncept_euroVoc'] = themes
-
-        if 'schema' in dataset and len(dataset['schema']):
-            new_dataset['dokumentace'] = dataset['schema']
-
-        if 'extras' in dataset:
-            extras = dataset['extras']
-            theme = [element for element in extras if element['key'] == 'theme']
-            if len(theme) > 0:
-                new_dataset['téma'] = theme[0]['value']
-        if 'tags' in dataset:
-            tags = dataset['tags']
-            new_tags = {'cs': []}
-            for tag in tags:
-                new_tags['cs'].append(tag['display_name'])
-            new_dataset['klíčové_slovo'] = new_tags
-
-        if len(dataset['resources']) == 0:
-            return new_dataset
-        new_dataset['distribuce'] = []
-        # new_dataset['časové_pokrytí'] = {
-        #    'typ': 'Časový interval',
-        #    'začátek': datetime.strptime(resource['created']),
-        #    'konec': datetime.strptime(resource['last_modified'])
-        # }
-
-        for resource in dataset['resources']:
-            new_resource = {
-                'iri': 'https://data.gov.cz/lkod/mdcr/datové-sady/vld/distribuce/'+self.get_final_format(resource['mimetype']),
-                'typ': 'Distribuce',
-                'podmínky_užití': self.get_license_prefill_prefill_value(dataset, resource, form),
-                'název': {
-                    'cs': resource['name']
-                },
-                'soubor_ke_stažení': resource['url'],
-                'přístupové_url': resource['url'],
-                'formát': 'http://publications.europa.eu/resource/authority/file-type/' + resource['format']
-            }
-            if 'mimetype' in resource and resource['mimetype'] is not None:
-                new_resource['typ_média'] = 'http://www.iana.org/assignments/media-types/' + resource[
-                    'mimetype']
-            new_dataset['distribuce'].append(new_resource)
-
-        return new_dataset
+        # TODO remove iri
+        dataset_model = NKODDataset(self.vatin, self.json_validator, dataset, form)
+        return dataset_model
 
     def fetch_old_dataset(self, dataset):
         return self.get_fetcher().fetch('package_show', {'id': dataset})
@@ -205,69 +128,3 @@ class Migrator:
 
         new_dataset = self.prepare_dataset_json_object(dataset, prefill_empty)
         return json.dumps(new_dataset)
-
-    def get_final_format(self, mimetype):
-        if mimetype is None:
-            return ''
-        m = mimetype.split('/')
-        if len(m) == 2:
-            return m[1]
-        return ''
-
-    def convert_ISO_8601_to_eu_frequency(self, value):
-        if value in FREQUENCY_MAP:
-            return 'http://publications.europa.eu/resource/authority/frequency/'+FREQUENCY_MAP[value]
-        return None
-
-    def get_ruian_type(self, uri = None, ruian_type = None, ruian_code = None):
-        if uri is not None:
-            uri_params = uri.split('/')[-2:]
-            if len(uri_params) == 2:
-                return 'https://linked.cuzk.cz/resource/ruian/'+uri_params[0]+'/'+uri_params[1]
-            else:
-                return ''
-
-        if ruian_type is not None:
-            return_value = ''
-            if ruian_type == 'ST':
-                return_value = 'stat'
-            elif ruian_type == 'MČ':
-                return_value = 'mestskecasti'
-            elif ruian_type == 'OB':
-                return_value = 'obec'
-            elif ruian_type == 'OK':
-                return_value = 'okres'
-            else:
-                return_value = 'stat'
-            if ruian_code is None:
-                return ''
-            return 'https://linked.cuzk.cz/resource/ruian/'+return_value+'/'+ruian_code
-        return ''
-
-    def get_frequency_prefill_value(self):
-        ...
-
-    def get_license_prefill_prefill_value(self, dataset, resource, form = None):
-        license_obj = {'typ': 'Specifikace podmínek užití', 'autorské_dílo': ''}
-        if 'license_link' in resource:
-            license_obj['autorské_dílo'] = resource['license_link']
-        if len(license_obj['autorské_dílo']) == 0 and 'license_url' in dataset:
-            license_obj['autorské_dílo'] = dataset['license_url']
-
-        license_obj['databáze_jako_autorské_dílo']= dataset['license_url'] if 'license_url' in dataset else ''
-        license_obj['databáze_chráněná_zvláštními_právy'] = 'https://data.gov.cz/podmínky-užití/není-chráněna-zvláštním-právem-pořizovatele-databáze/'
-
-        if len(license_obj['autorské_dílo']) == 0 and form is not None and form.prefill_license_check.data:
-            if form.prefill_license.data == 'cc4':
-                license_obj['autorské_dílo'] = 'https://creativecommons.org/licenses/by/4.0'
-            elif form.prefill_license.data == 'none':
-                license_obj['autorské_dílo'] = 'https://data.gov.cz/podmínky-užití/neobsahuje-autorská-díla/'
-
-        if len(license_obj['databáze_jako_autorské_dílo']) == 0 and form is not None and form.prefill_license_check.data:
-            if form.prefill_license.data == 'none':
-                license_obj['databáze_jako_autorské_dílo'] = 'https://data.gov.cz/podmínky-užití/není-autorskoprávně-chráněnou-databází/'
-
-        return license_obj
-
-    def get_ruian_prefill_value(self):
-        ...
