@@ -1,13 +1,15 @@
 import requests
+import json
 import jsonschema
 from jsonschema import Draft7Validator
+import jsonref
 
 
 class JSONValidator:
     schema = None
     resolver = None
     api_url = ""
-    errors = {}
+    errors = []
 
     def __init__(self, api_url):
         self.api_url = api_url
@@ -19,8 +21,9 @@ class JSONValidator:
             validator.validate(data)
             return True
         except RecursionError as e:
-            self.errors[dataset] = e
+            self.errors.append(e.message)
             return False
         except jsonschema.exceptions.ValidationError as e:
-            self.errors[dataset] = e
+            for error in sorted(validator.iter_errors(json.loads(data)), key=str):
+                self.errors.append(error.message)
             return False

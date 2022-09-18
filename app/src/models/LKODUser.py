@@ -13,6 +13,8 @@ class LKODUser:
 
     def login(self, username, password):
         data = requests.post(self.url+'/login', data={'email': username, 'password': password})
+        if data.status_code != 200:
+            return False
         content = json.loads(data.content)
         if 'accessToken' not in content:
             session['lkod'] = None
@@ -25,9 +27,10 @@ class LKODUser:
     def get_organization(self, vatin):
         data = requests.get(self.url+'/organizations', headers={'Authorization': 'Bearer ' + self.access_token}).json()
         content = data
+        print(content)
         for organization in content:
             if vatin == organization['identificationNumber']:
-                session['lkod']['organization'] = organization['id']
+                session['migrator']['lkod']['organization'] = organization['id']
                 self.organization_id = organization['id']
                 return True
         return False

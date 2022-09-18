@@ -1,13 +1,15 @@
 import json
-import sys
+from app.src.models.CKANDataset import CKANDataset
 
-from app.src.models.NKODDataset import NKODDataset, CONSTANT_JSON_VALID, CONSTANT_JSON_INVALID
+from app.src.models.NKODDataset import NKODDataset
+from app.src.components.clm.MigrationVariant import MigrationVariant
 
 import requests
 from flask import session
 from app.src.components.clm.Config import Config
 from app.src.components.clm.Fetcher import Fetcher
-from app.src.models.JSONValidator import JSONValidator
+from app.src.components.clm.JSONValidator import JSONValidator
+from app.src.components.clm.MigrationVariant import MigrationVariant
 
 class Migrator:
     lkod_url = ''
@@ -20,7 +22,7 @@ class Migrator:
 
     def __init__(self, lkod_url, ckan_url, access_token, vatin, migration_type=None, datasets=None):
         if datasets is None:
-            datasets = {CONSTANT_JSON_VALID: [], CONSTANT_JSON_INVALID: []}
+            datasets = {MigrationVariant.VALID.value: [], MigrationVariant.INVALID.value: []}
 
         self.config = Config(ckan_url, access_token)
         self.vatin = vatin
@@ -37,34 +39,31 @@ class Migrator:
             self.fetcher = Fetcher(self.config)
         return self.fetcher
 
-    def fetch_datasets(self):
+    def fetch_datasets(self): 
         self.dataset_endpoints = []
         response = self.get_fetcher().get_request(
             'package_search?include_private=' + ('true' if len(self.config.access_token) else 'false') + '&rows=1000')
         if not response:
             return response
-        for dataset in response['results']:
+        for dataset in response['results'][:1]:
             self.dataset_endpoints.append(dataset['name'])
-        return self.dataset_endpoints
+        return
 
     def migrate(self, form):
         if type(self.datasets) is str:
             self.datasets = eval(self.datasets)
         self.fetch_datasets()
         for dataset in self.dataset_endpoints:
-            if self.migration_type == 'all':
-                self.migrate_dataset(dataset, form)
-            elif self.migration_type == 'valid' and dataset in self.datasets[self.migration_type]:
-                self.migrate_dataset(dataset, form)
-            elif self.migration_type == 'invalid' and dataset in self.datasets[self.migration_type]:
+            if (self.migration_type == MigrationVariant.ALL.value) or (self.migration_type != MigrationVariant.ALL.value and dataset in self.datasets[self.migration_type]):
                 self.migrate_dataset(dataset, form)
 
     def migrate_dataset(self, dataset, form=None):
-        dataset = self.get_new_dataset_object(dataset, form)
-        if 'lkod' not in session:
+        dataset = self.get_transformed_dataset(dataset, form)
+
+        if 'migrator' not in session and 'lkod' not in session['migrator']:
             return False
-        lkod = session['lkod']
-        response = requests.post(lkod['url'] + '/datasets', data={'organizationId': lkod['organization']},
+        lkod = session['migrator']['lkod']
+        response = requests.post(lkod['url'] + '/datasets', data={'organizationId': lkod['organizationId']},
                                  headers={'Authorization': 'Bearer ' + lkod['accessToken']}).json()
         if 'id' in response:
             dataset_id = response['id']
@@ -72,59 +71,44 @@ class Migrator:
                                              headers={'Authorization': 'Bearer ' + lkod['accessToken']}).json()
             session_id = session_response['id']
             user_data = {'accessToken': lkod['accessToken'], 'sessionId': session_id, 'datasetId': dataset_id}
-            print(json.dumps(dataset))
             try:
                 form_response = requests.post(lkod['url'] + '/form-data',
                                           headers={'ContentType': 'application/x-www-form-urlencoded'},
-                                          json={'userData': json.dumps(user_data), 'formData': json.dumps(dataset)},)
-                print(form_response.url)
+                                          json={'userData': json.dumps(user_data), 'formData': dataset.toJson()},)
+                print(form_response.content)
                 self.migrate_resources_for_dataset(lkod['url'], dataset, dataset_id)
             except requests.ConnectionError:
-                print("Connection error")
                 return False
             return True
 
     def migrate_resources_for_dataset(self, lkod_url, dataset, dataset_id):
         for resource in dataset.distribuce:
-            file = requests.get(resource.soubor_ke_stažení, stream=True)
-            requests.post(lkod_url+'/datasets/'+dataset_id+'/files', headers={'ContentType': 'multipart/form-data'}, json={'datasetFile':file})
+            file = requests.get(resource["soubor_ke_stažení"])
+            requests.post(lkod_url+'/datasets/'+dataset_id+'/files', headers={'ContentType': 'multipart/form-data'}, files={'datasetFile':file.content})
 
     def prepare_datasets(self, form=None):
         self.fetch_datasets()
         for dataset in self.dataset_endpoints:
-            dataset_model = NKODDataset(self.lkod_url, self.vatin, dataset, form)
-            dataset_model.validate()
+            dataset_model = NKODDataset(self.lkod_url, self.vatin, self.fetch_old_dataset(dataset), form)
+            self.push_to_array(dataset, dataset_model.validate())
         return self.datasets
 
-    def get_new_dataset(self, dataset):
-        return json.dumps(self.get_new_dataset_object(dataset))
-
-    def get_new_dataset_object(self, dataset, form=None):
+    def get_transformed_dataset(self, dataset, form=None):
         old = self.fetch_old_dataset(dataset)
-        return self.prepare_dataset_json_object(old, form)
+        return self.transform_dataset(old, form)
 
-    def prepare_dataset_json_object(self, dataset, form=None):
-        if not dataset:
+    def transform_dataset(self, ckan_dataset, form=None):
+        if not ckan_dataset:
             return {}
-        # TODO remove iri
-        dataset_model = NKODDataset(self.vatin, self.json_validator, dataset, form)
+        dataset_model = NKODDataset(self.lkod_url, self.vatin, ckan_dataset, form)
         return dataset_model
 
     def fetch_old_dataset(self, dataset):
-        return self.get_fetcher().fetch('package_show', {'id': dataset})
-
-    def validate_dataset(self, dataset):
-        valid_state = self.json_validator.validate_json(self.get_new_dataset_object(dataset), dataset)
-        self.push_to_array(dataset, valid_state)
+        ckan_dataset = CKANDataset(self.get_fetcher(), dataset)
+        return ckan_dataset
 
     def push_to_array(self, dataset, status):
         if status is True:
-            self.datasets[CONSTANT_JSON_VALID].append(dataset)
+            self.datasets[MigrationVariant.VALID.value].append(dataset)
         elif status is False:
-            self.datasets[CONSTANT_JSON_INVALID].append(dataset)
-
-    def prepare_dataset_json(self, dataset, prefill_empty=False):
-        print('preparing next dataset')
-
-        new_dataset = self.prepare_dataset_json_object(dataset, prefill_empty)
-        return json.dumps(new_dataset)
+            self.datasets[MigrationVariant.INVALID.value].append(dataset)

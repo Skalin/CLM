@@ -1,14 +1,15 @@
+import json
+
 from app.src.components.clm.JSONValidator import JSONValidator
 
 FREQUENCY_MAP = {'R/P10Y':'DECENNIAL','R/P4Y':'QUADRENNIAL','R/P3Y':'TRIENNIAL','R/P2Y':'BIENNIAL','R/P1Y':'ANNUAL', 'R/P6M': 'ANNUAL_2','R/P4M': 'ANNUAL_3','R/P3M': 'QUARTERLY', 'R/P2M': 'BIMONTHLY', 'R/P0.5M':'BIMONTHLY','R/P1M':'MONTHLY', 'R/P0.33M': 'MONTHLY_3', 'R/P1W': 'WEEKLY',  'R/P3.5D': 'WEEKLY_2', 'R/P0.33W': 'WEEKLY_3','R/P2W':'BIWEEKLY','R/P0.5W': 'BIWEEKLY','R/P1D': 'DAILY','R/PT1H':'HOURLY','R/PT1S':'UPDATE_CONT'}
 
-CONSTANT_JSON_VALID = 'valid'
-CONSTANT_JSON_INVALID = 'invalid'
 
 
 class NKODDataset:
     json_validator = None
     lkod_url = ''
+    error = []
 
     context = 'https://ofn.gov.cz/rozhraní-katalogů-otevřených-dat/2021-01-11/kontexty/rozhraní-katalogů-otevřených-dat.jsonld'
     typ = 'Datová sada'
@@ -28,27 +29,29 @@ class NKODDataset:
     def __init__(self, lkod_url, vatin, dataset, form):
         self.poskytovatel = 'https://rpp-opendata.egon.gov.cz/odrpp/zdroj/orgán-veřejné-moci/' + vatin,
         self.lkod_url = lkod_url
-        self.json_validator = JSONValidator(self.lkod_url)
 
-        if dataset['maintainer'] is not None and len(dataset['maintainer']) and len(dataset['maintainer_email']):
-            self.kontaktní_bod = {'typ': 'Organizace', 'jméno': {'cs': dataset['maintainer']}, 'e-mail': 'mailto:'+dataset['maintainer_email']}
+        dataset_data = dataset.data
+        if dataset_data['maintainer'] is not None and len(dataset_data['maintainer']) and len(dataset_data['maintainer_email']):
+            self.kontaktní_bod = {'typ': 'Organizace', 'jméno': {'cs': dataset_data['maintainer']}, 'e-mail': 'mailto:'+dataset_data['maintainer_email']}
 
-        if len(dataset['title']):
-            self.název = {'cs': dataset['title']}
+        if len(dataset_data['title']):
+            self.název = {'cs': dataset_data['title']}
 
-        if dataset['notes'] is not None and len(dataset['notes']):
-            self.popis = {'cs': dataset['notes']}
+        if dataset_data['notes'] is not None and len(dataset_data['notes']):
+            self.popis = {'cs': dataset_data['notes']}
 
-        if 'frequency' in dataset and self.convert_ISO_8601_to_eu_frequency(dataset['frequency']) is not None:
-            self.periodicita_aktualizace = self.convert_ISO_8601_to_eu_frequency(dataset['frequency'])
+        # TODO periodicita
+        if 'frequency' in dataset_data and self.convert_ISO_8601_to_eu_frequency(dataset_data['frequency']) is not None:
+            self.periodicita_aktualizace = self.convert_ISO_8601_to_eu_frequency(dataset_data['frequency'])
 
         if form is not None and form.prefill_frequency_check.data and ('periodicita_aktualizace' in self or self.periodicita_aktualizace == ''):
             self.periodicita_aktualizace = 'http://publications.europa.eu/resource/authority/frequency/'+form.prefill_frequency.data.upper()
 
-        if 'spatial_uri' in dataset:
-            self.prvek_rúian = [self.get_ruian_type(dataset['spatial_uri'])]
-        elif 'ruian_type' in dataset and 'ruian_code' in dataset:
-            self.prvek_rúian = [self.get_ruian_type(dataset['ruian_type'], dataset['ruian_code'])]
+        # TODO remove iri
+        if 'spatial_uri' in dataset_data:
+            self.prvek_rúian = [self.get_ruian_type(dataset_data['spatial_uri'])]
+        elif 'ruian_type' in dataset_data and 'ruian_code' in dataset_data:
+            self.prvek_rúian = [self.get_ruian_type(dataset_data['ruian_type'], dataset_data['ruian_code'])]
         else:
             self.prvek_rúian = ['']
 
@@ -57,20 +60,19 @@ class NKODDataset:
 
         self.poskytovatel = 'https://linked.opendata.cz/zdroj/ekonomický-subjekt/'+ vatin
 
-        if 'theme' in dataset and len(dataset['theme']):
-            themes = dataset['theme'].split()
+        if 'theme' in dataset_data and len(dataset_data['theme']):
+            themes = dataset_data['theme'].split()
             self.koncept_euroVoc = themes
             # TODO migrate themes into téma and properly pass euroVoc
 
-        if 'schema' in dataset and len(dataset['schema']):
-            self.dokumentace = dataset['schema']
+        if 'schema' in dataset_data and len(dataset_data['schema']):
+            self.dokumentace = dataset_data['schema']
 
-        if 'extras' in dataset:
-            extras = dataset['extras']
+        if 'extras' in dataset_data:
+            extras = dataset_data['extras']
             theme = [element for element in extras if element['key'] == 'theme']
             if len(theme) > 0:
                 self.téma = theme[0]['value']
-        # TODO periodicita
 
         # TODO časové pokrytí
         # new_dataset['časové_pokrytí'] = {
@@ -79,21 +81,21 @@ class NKODDataset:
         #    'konec': datetime.strptime(resource['last_modified'])
         # }
 
-        if 'tags' in dataset:
-            tags = dataset['tags']
+        if 'tags' in dataset_data:
+            tags = dataset_data['tags']
             new_tags = {'cs': []}
             for tag in tags:
                 new_tags['cs'].append(tag['display_name'])
             self.klíčové_slovo = new_tags
 
-        if len(dataset['resources']) == 0:
+        if len(dataset_data['resources']) == 0:
             return
 
-        for resource in dataset['resources']:
+        for resource in dataset_data['resources']:
             new_resource = {
                 'iri': 'https://data.gov.cz/lkod/mdcr/datové-sady/vld/distribuce/'+self.get_final_format(resource['mimetype']),
                 'typ': 'Distribuce',
-                'podmínky_užití': self.get_license_prefill_prefill_value(dataset, resource, form),
+                'podmínky_užití': self.get_license_prefill_prefill_value(dataset_data, resource, form),
                 'název': {
                     'cs': resource['name']
                 },
@@ -147,14 +149,14 @@ class NKODDataset:
     def get_frequency_prefill_value(self):
         ...
 
-    def get_license_prefill_prefill_value(self, dataset, resource, form = None):
+    def get_license_prefill_prefill_value(self, dataset_data, resource, form = None):
         license_obj = {'typ': 'Specifikace podmínek užití', 'autorské_dílo': ''}
         if 'license_link' in resource:
             license_obj['autorské_dílo'] = resource['license_link']
-        if len(license_obj['autorské_dílo']) == 0 and 'license_url' in dataset:
-            license_obj['autorské_dílo'] = dataset['license_url']
+        if len(license_obj['autorské_dílo']) == 0 and 'license_url' in dataset_data:
+            license_obj['autorské_dílo'] = dataset_data['license_url']
 
-        license_obj['databáze_jako_autorské_dílo']= dataset['license_url'] if 'license_url' in dataset else ''
+        license_obj['databáze_jako_autorské_dílo']= dataset_data['license_url'] if 'license_url' in dataset_data else ''
         license_obj['databáze_chráněná_zvláštními_právy'] = 'https://data.gov.cz/podmínky-užití/není-chráněna-zvláštním-právem-pořizovatele-databáze/'
 
         if len(license_obj['autorské_dílo']) == 0 and form is not None and form.prefill_license_check.data:
@@ -173,8 +175,13 @@ class NKODDataset:
         ...
 
     def validate(self):
-        return self.json_validator.validate_json(self.serialize_to_JSON())
+        validator = JSONValidator(self.lkod_url)
+        status = validator.validate_json(self.toJson())
+        self.errors = validator.errors
+        return status
 
-    def serialize_to_JSON(self):
-        ...
+    def toJson(self):
+        return json.dumps(self.__dict__)
 
+    def __repr__(self):
+        return self.toJson()

@@ -262,18 +262,18 @@
 
                     <div class="form-group">
 
-                        {% for status in form.datasets.keys() %}
+                        {% for status in dataset_status %}
                         <div class="panel panel-default">
                             <div class="panel-heading" role="tab" id="headingOne">
                                 <h4 class="panel-title">
-                                    <a role="button" data-toggle="collapse" href="#datasets-info-{{ status }}"
-                                       aria-expanded="true" aria-controls="datasets-info-{{ status }}">
-                                        Seznam datových sad ve stavu: {{ form.get_status_translation(status) }} ({{
-                                        form.datasets[status]|length }})
+                                    <a role="button" data-toggle="collapse" href="#datasets-info-{{ status.value }}"
+                                       aria-expanded="true" aria-controls="datasets-info-{{ status.value }}">
+                                        Seznam datových sad ve stavu: {{ status.label() }} ({{
+                                        form.datasets[status.value]|length }})
                                     </a>
                                 </h4>
                             </div>
-                            <div class="collapse" id="datasets-info-{{ status }}">
+                            <div class="collapse" id="datasets-info-{{ status.value }}">
                                 <div class="panel-collapse collapse in">
                                     <table class="table">
                                         <thead>
@@ -282,12 +282,12 @@
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        {% for dataset in form.datasets[status] %}
+                                        {% for dataset in form.datasets[status.value] %}
                                         <tr>
                                             <th>
                                                 {{ dataset }}
                                             </th>
-                                            {% if status == 'invalid' %}
+                                            {% if status == dataset_status.INVALID %}
                                             <td>
                                                 <button type="button" data-toggle="modal"
                                                         data-target="#{{dataset}}-modal">

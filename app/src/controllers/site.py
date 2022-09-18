@@ -7,6 +7,7 @@ import json
 from app.src.models.LoginForm import LoginForm
 from app.src.models.MigrationForm import MigrationForm
 from app.src.models.Migrator import Migrator
+from app.src.components.clm.DatasetStatus import DatasetStatus
 from flask_wtf import FlaskForm
 import urllib.parse
 
@@ -21,14 +22,12 @@ def index():
     migration_form = MigrationForm()
     if request.method == 'POST' and form.login_form_submit.data and form.validate_on_submit():
         if form.process_data() is not False:
-            return render_template(template_path + 'index.html', form=form, migration_form=migration_form)
-
-    print(migration_form.validate_on_submit())
+            return render_template(template_path + 'index.html', form=form, migration_form=migration_form, dataset_status=DatasetStatus)
     if request.method == 'POST' and migration_form.migration_form_submit.data and migration_form.validate_on_submit():
         if migration_form.process_data() is not False:
             flash("Migrace provedena úspěšně. Prosíme ověřte datové sady ve svém lokálním katalogu.", 'success')
 
-    return render_template(template_path + 'index.html', form=form)
+    return render_template(template_path + 'index.html', form=form, dataset_status=DatasetStatus)
 
 @site.route('/authors', methods=['GET'])
 def authors():
@@ -56,15 +55,12 @@ def validate(dataset):
         flash('Please reinsert data into form, to be able to submit data', 'warning')
         redirect(url_for('site.index'))
 
-    migrator = session['migrator']
-    migrator_cls = Migrator(migrator['lkod']['url'], migrator['ckan']['url'], migrator['ckan']['api_key'],
-                            migrator['vatin'])
-    form_data = migrator_cls.get_new_dataset_object(dataset)
-    print(form_data)
-    migrator_cls.json_validator.validate_json(form_data, dataset)
-    return migrator_cls.json_validator.errors[dataset] if len(migrator_cls.json_validator.errors) else 'Nenalezeny žádné chyby v datové sadě'
-
-
+    migrator_configuration = session['migrator']
+    migrator_cls = Migrator(migrator_configuration['lkod']['url'], migrator_configuration['ckan']['url'], migrator_configuration['ckan']['api_key'],
+                            migrator_configuration['vatin'])
+    nkod_dataset = migrator_cls.get_transformed_dataset(dataset)
+    nkod_dataset.validate()
+    return nkod_dataset.errors if len(nkod_dataset.errors) else 'Nenalezeny žádné chyby v datové sadě'
 
     response = requests.post(lkod['url'] + '/datasets', data={'organizationId': 1},
                              headers={'Authorization': 'Bearer ' + lkod['accessToken']}).json()
