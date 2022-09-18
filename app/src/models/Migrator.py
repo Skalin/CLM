@@ -45,7 +45,7 @@ class Migrator:
             'package_search?include_private=' + ('true' if len(self.config.access_token) else 'false') + '&rows=1000')
         if not response:
             return response
-        for dataset in response['results'][:1]:
+        for dataset in response['results']:
             self.dataset_endpoints.append(dataset['name'])
         return
 
