@@ -84,7 +84,9 @@ class Migrator:
     def migrate_resources_for_dataset(self, lkod_url, dataset, dataset_id):
         for resource in dataset.distribuce:
             file = requests.get(resource["soubor_ke_stažení"])
-            requests.post(lkod_url+'/datasets/'+dataset_id+'/files', headers={'ContentType': 'multipart/form-data'}, files={'datasetFile':file.content})
+            print(lkod_url+'/datasets/'+dataset_id+'/files')
+            response = requests.post(lkod_url+'/datasets/'+dataset_id+'/files', headers={'ContentType': 'multipart/form-data'}, files={'datasetFile':file.content})
+            print(response.content)
 
     def prepare_datasets(self, form=None):
         self.fetch_datasets()
